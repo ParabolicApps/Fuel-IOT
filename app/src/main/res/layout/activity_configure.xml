@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.xswxm.controller.network.ConfigureDevice">
+    tools:context="com.codesw.fuelcontroller.ConfigureDeviceActivity">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -36,7 +37,7 @@
                     android:id="@+id/img_ref_ssid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:tint="@android:color/darker_gray"
+                    app:tint="@android:color/darker_gray"
                     android:src="@drawable/ic_menu_refresh"/>
             </LinearLayout>
             <EditText

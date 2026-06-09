@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="teal_700">#FF018786</color>
+    <color name="second">#C7B781</color>
+
     <color name="red_main">#FF1744</color>
     <color name="red_light">#FF616F</color>
     <color name="red_dark">#C4001D</color>

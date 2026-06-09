@@ -9,7 +9,7 @@
 
     <!-- Strings related to ToolBar -->
     <string name="toolbar_refresh">Refresh</string>
-<!--    <string name="toolbar_settings">Settings</string>-->
+    <!--    <string name="toolbar_settings">Settings</string>-->
     <string name="toolbar_add_device">Add device</string>
     <string name="toolbar_fix_device">Fix device</string>
     <string name="toolbar_preference">Preference</string>
@@ -63,8 +63,8 @@
 
     <string name="set_device_failed">Lost connection to the device, please check your device and wifi state.</string>
     <string name="scan_network_no_wifi">Please connect to your home wifi and scan again!</string>
-	
-	    <!-- Preference Titles -->
+
+    <!-- Preference Titles -->
     <string name="messages_header">Messages</string>
     <string name="sync_header">Sync</string>
 
@@ -74,7 +74,7 @@
 
     <!-- Sync Preferences -->
     <string name="sync_title">Sync email periodically</string>
-	    <string name="attachment_title">Download incoming attachments</string>
+    <string name="attachment_title">Download incoming attachments</string>
     <string name="attachment_summary_on">Automatically download attachments for incoming emails
     </string>
     <string name="attachment_summary_off">Only download attachments when manually requested</string>

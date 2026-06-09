@@ -1,4 +1,6 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
@@ -21,7 +23,7 @@
                 android:layout_marginBottom="@dimen/image_bottom_margin"
                 android:layout_marginTop="@dimen/image_top_margin"
                 android:scaleType="centerCrop"
-				android:tint="#6750A4"
+				app:tint="#6750A4"
                 android:src="@drawable/pic_guidepage_wifi" />
 
             <com.google.android.material.textview.MaterialTextView

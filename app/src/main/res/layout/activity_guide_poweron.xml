@@ -42,6 +42,7 @@
             android:textSize="@dimen/font_size_small" />
 
         <Button
+            android:id="@+id/btn_next"
             android:layout_marginTop="50dp"
 			android:layout_height="wrap_content"
             android:text="Go Next"

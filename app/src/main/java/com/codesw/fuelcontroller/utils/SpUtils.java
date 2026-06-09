@@ -1,8 +1,5 @@
 package com.codesw.fuelcontroller.utils;
 
-/**
- * Created by Air on 3/30/2017.
- */
 
 import android.content.Context;
 import android.content.SharedPreferences;

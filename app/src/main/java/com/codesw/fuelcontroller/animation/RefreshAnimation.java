@@ -9,7 +9,7 @@ import com.codesw.fuelcontroller.R;
 
 
 /**
- * Created by Air on 3/25/2017.
+ * Simple Animation Class
  */
 
 public class RefreshAnimation {

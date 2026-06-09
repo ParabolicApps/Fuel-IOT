@@ -5,7 +5,7 @@ import android.view.MenuItem;
 import android.widget.LinearLayout;
 
 /**
- * Created by Air on 4/10/2017.
+ * This Class Will Store These Properties as Object
  */
 
 public class Variables {

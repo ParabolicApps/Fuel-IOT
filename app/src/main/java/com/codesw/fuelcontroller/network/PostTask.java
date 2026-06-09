@@ -11,8 +11,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
- * Created by Air on 4/10/2017.
+ *
  * Post task, return an input stream
+ * This uses HTTP instead of TCP or UTP
  */
 
 public class PostTask extends AsyncTask<Object, Object, String> {

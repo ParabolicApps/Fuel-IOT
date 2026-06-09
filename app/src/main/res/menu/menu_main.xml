@@ -17,4 +17,15 @@
         android:orderInCategory="3"
         android:title="@string/toolbar_fix_device"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/export"
+        android:title="Export "
+        app:showAsAction="never"
+        android:orderInCategory="4"/>
+    <item
+        android:id="@+id/simulateData"
+        android:title="Simulate(Experimental) "
+        app:showAsAction="never"
+        android:orderInCategory="5"/>
 </menu>

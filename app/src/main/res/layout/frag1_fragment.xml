@@ -1,0 +1,145 @@
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/white"
+	android:orientation="vertical">
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+	<LinearLayout
+		android:id="@+id/linear1"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:gravity="center_horizontal|center_vertical"
+		android:orientation="vertical">
+		<LinearLayout
+			android:id="@+id/linear3"
+			android:layout_width="match_parent"
+			android:layout_height="250dp"
+			android:orientation="horizontal">
+			<LinearLayout
+				android:id="@+id/linear4"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:padding="8dp"
+                android:layout_weight="1"
+				android:gravity="center_horizontal|center_vertical"
+				android:orientation="vertical"
+				>
+				<TextView
+                    android:id="@+id/total_consume"
+					android:text="200.0L"
+					android:gravity="center"
+					android:textSize="40sp"
+					android:layout_weight="1"
+					android:textColor="#08BEFF"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"/>
+				<TextView
+					android:id="@+id/textview1"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:padding="8dp"
+					android:text="Total Consumption (L)"
+					android:textSize="16sp"
+					android:textColor="#000000"
+					android:lines="2"/>
+			</LinearLayout>
+			<LinearLayout
+
+                android:gravity="center_horizontal|center_vertical"
+
+				android:id="@+id/linear5"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:padding="8dp"
+				android:orientation="vertical"
+				android:layout_weight="1">
+				<me.itangqi.waveloadingview.WaveLoadingView
+					android:id="@+id/waveLoadingView"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"
+					android:orientation="horizontal"
+					android:layout_weight="1"
+					app:wlv_borderColor="#2b2b36"
+					app:wlv_borderWidth="10dp"
+					app:wlv_shapeType="circle"
+					app:wlv_titleCenterColor="@android:color/darker_gray"
+					app:wlv_titleCenterSize="28sp"
+					app:wlv_waveAmplitude="70"/>
+				<SeekBar
+					android:id="@+id/seekbar1"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:padding="8dp"/>
+			</LinearLayout>
+		</LinearLayout>
+		<LinearLayout
+			android:id="@+id/linear6"
+			android:layout_width="match_parent"
+			android:layout_height="250dp"
+
+			android:orientation="horizontal">
+
+			<LinearLayout
+				android:id="@+id/linear7"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:layout_weight="1"
+				android:gravity="center_horizontal|center_vertical"
+				android:orientation="vertical"
+				android:padding="8dp">
+
+				<TextView
+                    android:id="@+id/total_input"
+					android:text="200.0L"
+					android:gravity="center"
+					android:textSize="40sp"
+					android:layout_weight="1"
+					android:textColor="#EE9E00"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"/>
+
+                <TextView
+                    android:id="@+id/textview2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:text="Total Input(L)"
+                    android:textColor="#000000"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/linear8"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:padding="8dp"
+				android:gravity="center_horizontal|center_vertical"
+				android:orientation="vertical"
+				android:layout_weight="1">
+				<TextView
+                    android:id="@+id/monthly_usage_total"
+					android:text="200.0L"
+					android:gravity="center"
+					android:textSize="40sp"
+					android:layout_weight="1"
+					android:textColor="#21C68C"
+					android:layout_width="match_parent"
+					android:layout_height="match_parent"/>
+				<TextView
+					android:id="@+id/textview3"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:padding="8dp"
+					android:text="Monthly Usage (L)"
+					android:textSize="16sp"
+					android:textColor="#000000"/>
+			</LinearLayout>
+		</LinearLayout>
+	</LinearLayout>
+	</ScrollView>
+</LinearLayout>
