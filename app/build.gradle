@@ -48,12 +48,14 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui:2.3.5'
     implementation 'com.journeyapps:zxing-android-embedded:4.1.0'
     implementation 'com.google.zxing:core:3.2.1'
-    implementation 'me.itangqi.waveloadingview:library:0.3.5'
+    implementation 'com.github.lecho:hellocharts-library:1.5.8@aar'
+    //implementation 'me.itangqi.waveloadingview:library:0.3.5'
     //implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
-    implementation 'com.thanosfisherman.wifiutils:wifiutils:1.6.5'
+    implementation 'io.github.thanosfisherman.wifiutils:wifiutils:1.6.6'
     implementation 'androidx.annotation:annotation:1.3.0'
-
+    implementation project(':library')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    //implementation 'com.github.tangqi92:WaveLoadingView:0.3.5'
 }

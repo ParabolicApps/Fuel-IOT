@@ -14,6 +14,16 @@
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
 
+    <!-- Neon Dark Theme Colors -->
+    <color name="dark_bg">#0D0D0D</color>
+    <color name="card_bg">#1A1A1A</color>
+    <color name="neon_blue">#00D4FF</color>
+    <color name="neon_orange">#FF8C00</color>
+    <color name="neon_green">#39FF14</color>
+    <color name="neon_blue_glow">#4000D4FF</color>
+    <color name="neon_orange_glow">#40FF8C00</color>
+    <color name="neon_green_glow">#4039FF14</color>
+
     <color name="transparent">#00000000</color>
 	<color name="colorOnPrimary">#625B71</color>
 

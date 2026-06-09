@@ -1,45 +1,183 @@
-<LinearLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
-	xmlns:tools="http://schemas.android.com/tools"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:orientation="vertical">
-	<LinearLayout
-		android:id="@+id/linear1"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:padding="8dp"
-		android:orientation="vertical">
-		<TextView
-			android:id="@+id/textview1"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:padding="8dp"
-			android:text="Usage Weekly Total"
-			android:textSize="16sp"
-			android:textColor="#000000"/>
-		<LinearLayout
-			android:id="@+id/line_chart2"
-			android:layout_width="match_parent"
-			android:layout_height="200dp"
-			android:padding="8dp"
-			android:gravity="center_horizontal|center_vertical"
-			android:orientation="vertical"/>
-		<TextView
-			android:id="@+id/textview2"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:padding="8dp"
-			android:text="Usage Daily Total"
-			android:textSize="16sp"
-			android:textColor="#000000"/>
-		<LinearLayout
-			android:id="@+id/line_chart"
-			android:layout_width="match_parent"
-			android:layout_height="250dp"
-			android:padding="8dp"
-			android:gravity="center_horizontal|center_vertical"
-			android:orientation="vertical"/>
-	</LinearLayout>
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Top Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:id="@+id/fuel_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/baseline_apps_24"
+                    app:tint="@color/neon_blue" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="8dp"
+                    android:layout_toEndOf="@id/fuel_icon"
+                    android:text="FUEL GUARD"
+                    android:textColor="@color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/baseline_settings_24"
+                    app:tint="@color/white" />
+            </RelativeLayout>
+
+            <!-- Period Selector -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_glow_blue"
+                android:padding="8dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Last 30 Days (May 1 - May 30, 2026)"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:paddingStart="8dp"/>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/baseline_settings_24"
+                    app:tint="@color/white"
+                    android:rotation="90"/>
+            </LinearLayout>
+
+            <!-- Total Refuelled Chart Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_glow_blue"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <ImageView
+                        android:id="@+id/chart_icon1"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/baseline_apps_24"
+                        app:tint="@color/neon_blue" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/chart_icon1"
+                        android:layout_marginStart="8dp"
+                        android:text="TOTAL REFUELLED"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="250\nLiters Total"
+                        android:textColor="@color/neon_blue"
+                        android:textSize="12sp"
+                        android:gravity="end"
+                        android:textStyle="bold"/>
+                </RelativeLayout>
+
+                <lecho.lib.hellocharts.view.LineChartView
+                    android:id="@+id/chart"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <!-- Engine Consumed Chart Card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_glow_orange"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:layout_marginBottom="16dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <ImageView
+                        android:id="@+id/chart_icon2"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/baseline_apps_24"
+                        app:tint="@color/neon_orange" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/chart_icon2"
+                        android:layout_marginStart="8dp"
+                        android:text="ENGINE CONSUMED"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="185\nLiters Total"
+                        android:textColor="@color/neon_orange"
+                        android:textSize="12sp"
+                        android:gravity="end"
+                        android:textStyle="bold"/>
+                </RelativeLayout>
+
+                <lecho.lib.hellocharts.view.LineChartView
+                    android:id="@+id/chart2"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <!-- Hidden Views for Compatibility -->
+            <RadioGroup
+                android:id="@+id/radio_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/container2"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:background="#33FFFFFF"/>
+
+        </LinearLayout>
+    </ScrollView>
+
 </LinearLayout>

@@ -35,7 +35,6 @@ import com.codesw.fuelcontroller.utils.SQLiteHandler;
 import com.google.android.material.button.*;
 import android.view.View;
 import android.graphics.Typeface;
-import me.itangqi.library.*;
 import com.codesw.fuelcontroller.R;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -120,41 +119,41 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 				myProgress = _progressValue;
 				waveLoadingView.setProgressValue((int)myProgress);
 				waveLoadingView.setCenterTitle(myProgress +"%");
-				
+
 			}
-			
+
 			@Override
 			public void onStartTrackingTouch(SeekBar _param1) {
-				
+
 			}
-			
+
 			@Override
 			public void onStopTrackingTouch(SeekBar _param2) {
-				
+
 			}
 		});
-		
+
 
 	}
-	
+
 	private void initializeLogic() {
-		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), android.R.color.black));
+		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), R.color.neon_green));
 		waveLoadingView.setProgressValue((int)myProgress);
-		
+
 		String progressValue = String.valueOf(myProgress);
 		//set title within the WaveView
 		waveLoadingView.setCenterTitle(progressValue + "%");
-
+		waveLoadingView.setCenterTitleColor(Color.WHITE);
 
 
 		monthly_usage_total.setText(db.getMonthlyTotal(new SimpleDateFormat("MM").format(c.getTimeInMillis())));
-		total_input.setText(String.valueOf(db.getTodayTotalInput()));
-		total_consume.setText(String.valueOf(db.getTodayTotalUsage()));
+		total_input.setText(String.valueOf(db.getTodayTotalInput()) + " Ltrs");
+		total_consume.setText(String.valueOf(db.getTodayTotalUsage()) + " Ltrs");
 
 		// pause charging animation and wave color, depending on charging status
-		
+
 		/*Toast.makeText(context, "isCharging = " + isCharging , Toast.LENGTH_SHORT).show();*/
-		
+
 		_changeActivityFont("greenscr");
 
 		monthly_usage_total.setTypeface(Typeface.createFromAsset(getContext().getAssets(),"fonts/ubuntu_medium.ttf"), 0);
@@ -171,45 +170,45 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			getActivity().startService(intent);
 		}
 	}
-	
+
 	@Override
 	public void onActivityResult(int _requestCode, int _resultCode, Intent _data) {
-		
+
 		super.onActivityResult(_requestCode, _resultCode, _data);
-		
+
 		switch (_requestCode) {
-			
+
 			default:
 			break;
 		}
 	}
-	
+
 	public void _stopped () {
 		waveLoadingView.pauseAnimation();
 		//textViewChargeTimeRemaining.setVisibility(View.GONE);
 		//textViewEtaHeading.setVisibility(View.GONE);
 		//waveLoadingView.setWaveColor(getContext().getResources().getColor(android.R.color.holo_green_dark));
-		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), android.R.color.black));
-		
+		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), R.color.neon_green));
+
 	}
-	
-	
+
+
 	public void _running () {
 		waveLoadingView.resumeAnimation();
 		//waveLoadingView.setWaveColor(getContext().getResources().getColor(R.color.colorGreen));  Depreciated getcolor
-		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), android.R.color.black));
-		
+		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), R.color.neon_green));
+
 	}
-	
-	
+
+
 	public void _changeActivityFont (final String _fontname) {
 		fontName = "fonts/".concat(_fontname.concat(".ttf"));
-		overrideFonts(getContext(),getView()); 
-	} 
+		overrideFonts(getContext(),getView());
+	}
 	private void overrideFonts(final android.content.Context context, final View v) {
-		
+
 		try {
-			Typeface 
+			Typeface
 			typeface = Typeface.createFromAsset(getContext().getAssets(), fontName);
 			if ((v instanceof ViewGroup)) {
 				ViewGroup vg = (ViewGroup) v;
@@ -237,7 +236,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			}
 		}
 		catch(Exception e)
-		
+
 		{
 			Toast.makeText(getContext(), "Error Loading Font", Toast.LENGTH_SHORT).show();
 		}
