@@ -33,7 +33,8 @@ import com.codesw.fuelcontroller.utils.SQLiteHandler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.codesw.fuelcontroller.fragments.SettingsFragment;
 import com.codesw.fuelcontroller.fragments.DevicesFragment;
-import com.codesw.fuelcontroller.fragments.HomeFragment;
+import com.codesw.fuelcontroller.fragments.Frag1FragmentActivity;
+import com.codesw.fuelcontroller.fragments.Frag2FragmentActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -78,12 +79,14 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
 
         mainBnv.setOnItemSelectedListener(item -> {
             switch (item.getItemId()) {
-                case R.id.homepage:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new HomeFragment(), "Home").addToBackStack(null).commit();
+                case R.id.home:
+                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new Frag1FragmentActivity(), "Home").addToBackStack(null).commit();
                     break;
-                case R.id.devices:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new DevicesFragment(), "Devices").addToBackStack(null).commit();
-
+                case R.id.analytics:
+                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new Frag2FragmentActivity(), "Analytics").addToBackStack(null).commit();
+                    break;
+                case R.id.map:
+                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new DevicesFragment(), "Map").addToBackStack(null).commit();
                     break;
                 case R.id.settings:
                     fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new SettingsFragment()).addToBackStack(null).commit();
@@ -92,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
             return true;
         });
         // Setup Broadcast and SQLite Handler
-        mainBnv.setSelectedItemId(R.id.homepage);
+        mainBnv.setSelectedItemId(R.id.home);
         receiver = new UrlBroadcastReceiver();
         filter = new IntentFilter();
         filter.addAction(Checker.URL_FILTER);
@@ -242,10 +245,13 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         Log.d(TAG, "urlReceived: output: "+counter.split("/")[1]);
     }
     public void sendDataFrag(String data){
-        HomeFragment fragment1 = (HomeFragment) getSupportFragmentManager().findFragmentByTag("Home");
-        //DevicesFragment fragment1 = (DevicesFragment) getSupportFragmentManager().findFragmentByTag("Devices");
+        Frag1FragmentActivity fragment1 = (Frag1FragmentActivity) getSupportFragmentManager().findFragmentByTag("Home");
         if (fragment1 != null){
             fragment1.setProgress(data);
+        }
+        Frag2FragmentActivity fragment2 = (Frag2FragmentActivity) getSupportFragmentManager().findFragmentByTag("Analytics");
+        if (fragment2 != null){
+            fragment2.setData(data);
         }
 
     }
