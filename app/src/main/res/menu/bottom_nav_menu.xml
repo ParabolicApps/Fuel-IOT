@@ -1,0 +1,24 @@
+  <menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/homepage"
+        android:contentDescription="Dashboard"
+        android:icon="@drawable/baseline_apps_24"
+        android:title="Dashboard"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/devices"
+        android:contentDescription="Add Your Devices"
+        android:icon="@drawable/baseline_settings_24"
+        android:title="Add Devices"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/settings"
+        android:contentDescription="Set Preferances"
+        android:icon="@drawable/baseline_settings_24"
+        android:title="Settings"
+        app:showAsAction="always" />
+</menu>

@@ -1,0 +1,86 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/textView_horizontal_margin"
+            android:layout_marginRight="@dimen/textView_horizontal_margin"
+            android:gravity="center"
+            android:orientation="vertical" >
+
+            <ImageView
+                android:layout_width="@dimen/image_width"
+                android:layout_height="@dimen/image_height"
+                android:layout_gravity="center"
+                android:layout_marginBottom="@dimen/image_bottom_margin"
+                android:layout_marginTop="@dimen/image_top_margin"
+                android:scaleType="centerCrop"
+				android:tint="#6750A4"
+                android:src="@drawable/pic_guidepage_wifi" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/textView_bottom_margin"
+                android:gravity="center"
+                android:text="@string/guide_connect_wifi"
+                android:textColor="@android:color/black"
+                android:textSize="@dimen/font_size_large" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="20dp" >
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp" >
+
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical" >
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/text_wifiStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentBottom="true"
+                            android:layout_centerInParent="true"
+                            android:layout_marginBottom="@dimen/textView_scan_bottom_margin"
+                            android:textSize="@dimen/font_size_medium" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentBottom="true"
+                            android:text="@string/notice_connect_wifi"
+                            android:textSize="@dimen/font_size_small" />
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+               
+                </androidx.appcompat.widget.LinearLayoutCompat>
+            </com.google.android.material.card.MaterialCardView>
+
+            <Button
+                android:id="@+id/btn_connectWiFi"
+                android:layout_width="@dimen/button_width"
+                android:layout_height="@dimen/button_height"
+                android:layout_gravity="center"
+                android:layout_marginBottom="@dimen/button_bottom_margin"
+                android:layout_marginTop="@dimen/button_top_margin"
+                android:text="@string/btn_wifi_connect"
+                android:textSize="@dimen/font_size_medium" />
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

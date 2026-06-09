@@ -1,0 +1,51 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+		android:gravity="center_horizontal"
+        android:layout_marginLeft="@dimen/textView_horizontal_margin"
+        android:layout_marginRight="@dimen/textView_horizontal_margin"
+        android:orientation="vertical" >
+
+        <ImageView
+            android:layout_width="@dimen/image_width"
+            android:layout_height="@dimen/image_height"
+            android:layout_gravity="center_vertical|center|center_horizontal"
+            android:layout_marginBottom="@dimen/image_bottom_margin"
+            android:layout_marginTop="@dimen/image_top_margin"
+            android:scaleType="centerCrop"
+			
+            android:src="@drawable/pic_guidepage_plugin" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical|center|center_horizontal"
+            android:text="@string/guide_power_on"
+            android:textColor="@android:color/black"
+			android:layout_marginBottom="@dimen/textView_bottom_margin"
+            android:textSize="@dimen/font_size_large" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="200dp"
+            android:layout_alignParentBottom="true"
+			android:textAlignment="center"
+			
+            android:text="@string/notice_power_on"
+            android:textSize="@dimen/font_size_small" />
+
+        <Button
+            android:layout_marginTop="50dp"
+			android:layout_height="wrap_content"
+            android:text="Go Next"
+            android:layout_width="wrap_content" />
+    </LinearLayout>
+
+</RelativeLayout>
