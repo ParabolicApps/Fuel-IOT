@@ -151,14 +151,6 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         
-        // Hide Export and Simulate in Real Mode
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean isRealMode = prefs.getBoolean("real_mode", false);
-        if (isRealMode) {
-            menu.findItem(R.id.export).setVisible(false);
-            menu.findItem(R.id.simulateData).setVisible(false);
-        }
-
         return true;
     }
 

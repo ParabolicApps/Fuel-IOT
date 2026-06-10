@@ -1,6 +1,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_view_daily"
+        android:title="Show Daily"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_view_weekly"
+        android:title="Show Weekly"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_reset"
         android:title="Reset"
         app:showAsAction="never" />

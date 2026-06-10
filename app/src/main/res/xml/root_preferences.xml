@@ -113,6 +113,11 @@
             app:key="clear_db"
             app:title="Clear Database"
             app:summary="Permanently delete all fuel logs and statistics" />
+
+        <Preference
+            app:key="clear_cloud_db"
+            app:title="Clear Cloud Data"
+            app:summary="Permanently delete all logs from Firebase" />
     </PreferenceCategory>
 
 </PreferenceScreen>

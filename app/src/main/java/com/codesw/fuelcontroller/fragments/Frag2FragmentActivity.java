@@ -161,8 +161,7 @@ public class Frag2FragmentActivity extends Fragment {
 		// Apply professional typography across the analytics dashboard
 		_changeActivityFont("ubuntu_medium");
 
-		generateValues();
-		generateData();
+		showWeeklyChart();
 		resetViewport();
 	}
 
@@ -206,6 +205,16 @@ public class Frag2FragmentActivity extends Fragment {
 	@Override
 	public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 		int id = item.getItemId();
+		if (id == R.id.action_view_daily) {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				showDailyChart();
+			}
+			return true;
+		}
+		if (id == R.id.action_view_weekly) {
+			showWeeklyChart();
+			return true;
+		}
 		if (id == R.id.action_reset) {
 			reset();
 			generateData();
@@ -545,7 +554,18 @@ public class Frag2FragmentActivity extends Fragment {
 			if (tooltip == null) return;
 
 			// Update tooltip content based on the selected point's data
-			headerText.setText("May " + (int)(value.getX() + 1)); 
+			LineChartData data = chart.getLineChartData();
+			if (data != null && data.getAxisXBottom() != null) {
+				List<AxisValue> axisValues = data.getAxisXBottom().getValues();
+				if (axisValues != null && pointIndex < axisValues.size()) {
+					headerText.setText(String.valueOf(axisValues.get(pointIndex).getLabelAsChars()));
+				} else {
+					headerText.setText("Point " + (pointIndex + 1));
+				}
+			} else {
+				headerText.setText("Point " + (pointIndex + 1));
+			}
+
 			valueText.setText(prefix + ": " + String.format(Locale.getDefault(), "%.1f", value.getY()) + " Ltrs");
 
 			tooltip.setVisibility(View.VISIBLE);
@@ -586,26 +606,22 @@ public class Frag2FragmentActivity extends Fragment {
 		List<PointValue> consumedValues = new ArrayList<>();
 		List<AxisValue> axisValues = new ArrayList<>();
 
-		// Process the last 7 days of historical logs
+		// Process the last 7 days (Oldest -> Today)
+		// db.getWeekly returns [Today, Yesterday, ..., 6 Days Ago]
 		for (int i = 0; i < 7; i++) {
+			int dataIndex = 6 - i; // Start from 6 days ago (index 6) to today (index 0)
+			
+			calendar.setTime(new java.util.Date());
+			calendar.add(Calendar.DATE, -dataIndex);
 			String dateStr = dateFormat.format(calendar.getTime());
-			refillValues.add(new PointValue(i, weeklyRefill.get(i)));
-			consumedValues.add(new PointValue(i, weeklyConsumed.get(i)));
+			
+			refillValues.add(new PointValue(i, weeklyRefill.get(dataIndex)));
+			consumedValues.add(new PointValue(i, weeklyConsumed.get(dataIndex)));
 			axisValues.add(new AxisValue(i).setLabel(dateStr));
-			calendar.add(Calendar.DATE, -1);
 		}
 
-		// Ensure chronological display (Past -> Present)
-		Collections.reverse(refillValues);
-		Collections.reverse(consumedValues);
-		
-		List<AxisValue> sortedAxis = new ArrayList<>();
-		for(int i=0; i<refillValues.size(); i++){
-			sortedAxis.add(new AxisValue(i).setLabel(axisValues.get(refillValues.size()-1-i).getLabelAsChars()));
-		}
-
-		updateChartDisplay(mainChart, refillValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_blue));
-		updateChartDisplay(secondaryChart, consumedValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_orange));
+		updateChartDisplay(mainChart, refillValues, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_blue));
+		updateChartDisplay(secondaryChart, consumedValues, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_orange));
 	}
 
 	/**

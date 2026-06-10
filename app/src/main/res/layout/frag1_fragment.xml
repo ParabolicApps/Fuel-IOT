@@ -132,7 +132,7 @@
                         android:id="@+id/total_input"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="50.0 Ltrs"
+                        android:text="42.0 Ltrs"
                         android:textColor="?attr/appContentTextColor"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -176,7 +176,7 @@
                         android:id="@+id/total_consume"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="32.5 Ltrs"
+                        android:text="42.0 Ltrs"
                         android:textColor="?attr/appContentTextColor"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -234,7 +234,7 @@
                         android:id="@+id/monthly_usage_total"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="17.5 Ltrs"
+                        android:text="42.0 Ltrs"
                         android:textColor="@color/neon_green"
                         android:textSize="36sp"
                         android:textStyle="bold" />

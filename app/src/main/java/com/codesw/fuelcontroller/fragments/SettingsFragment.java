@@ -102,6 +102,14 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 return true;
             });
         }
+
+        Preference clearCloudPref = findPreference("clear_cloud_db");
+        if (clearCloudPref != null) {
+            clearCloudPref.setOnPreferenceClickListener(preference -> {
+                showClearCloudDbConfirmation();
+                return true;
+            });
+        }
     }
 
     @Override
@@ -312,6 +320,20 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             FirebaseSyncManager.syncAll(db);
             toast("Local data synced to Firebase.");
         }).start();
+    }
+
+    private void showClearCloudDbConfirmation() {
+        if (getContext() == null) return;
+        new MaterialAlertDialogBuilder(getContext())
+                .setTitle("Clear Cloud Data?")
+                .setMessage("This will permanently delete all logs and totals from Firebase. Your account information will remain intact.")
+                .setPositiveButton("Clear Cloud", (dialog, which) -> {
+                    FirebaseSyncManager.clearUserData((success, message) -> {
+                        toast(message);
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showClearDbConfirmation() {
