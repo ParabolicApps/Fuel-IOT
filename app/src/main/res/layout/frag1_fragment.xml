@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Top Header (Inside Fragment for now or Activity) -->
+            <!-- Top Header -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -60,17 +60,34 @@
                 android:orientation="vertical"
                 android:layout_marginBottom="24dp">
 
-                <ImageView
-                    android:layout_width="150dp"
-                    android:layout_height="100dp"
-                    android:alpha="0.8"
-                    android:src="@drawable/baseline_apps_24"
-                    app:tint="@color/neon_blue" />
+                <FrameLayout
+                    android:id="@+id/logo_container"
+                    android:layout_width="250dp"
+                    android:layout_height="160dp">
+
+                    <ImageView
+                        android:id="@+id/car_logo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.8"
+                        android:src="@drawable/car"
+                        app:tint="@color/neon_blue"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <ImageView
+                        android:id="@+id/nozzle_logo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.0"
+                        android:src="@drawable/ic_fuel_nozzle" />
+                </FrameLayout>
 
                 <TextView
+                    android:id="@+id/status_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="● Engine: ON  |  📍 Dhaka-Chittagong Highway"
+                    android:text="● Engine: OFF  |  📍 Dhaka-Chittagong Highway"
                     android:textColor="?attr/appSubTextColor"
                     android:textSize="12sp"
                     android:layout_marginTop="8dp"/>
@@ -170,7 +187,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Current Tank Status (Full Width) -->
+            <!-- Current Tank Status -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="100dp"

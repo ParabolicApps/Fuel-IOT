@@ -40,6 +40,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
             }
+            
+            // Redirect to Home tab in MainActivity after theme change
+            if (getActivity() instanceof com.codesw.fuelcontroller.MainActivity) {
+                com.codesw.fuelcontroller.MainActivity activity = (com.codesw.fuelcontroller.MainActivity) getActivity();
+                activity.findViewById(R.id.home).performClick();
+            }
         }
     }
 }

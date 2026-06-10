@@ -90,6 +90,8 @@
     <string name="pref_refill_alert_title">Refill Confirmation</string>
 
     <string name="pref_category_device">Hardware Sync</string>
+    <string name="pref_mode_title">Operation Mode</string>
+    <string name="pref_mode_summary">Toggle between Demo data and Real-time IOT data</string>
     <string name="pref_update_frequency_title">Update Frequency</string>
     <string name="pref_server_url_title">IOT Server URL</string>
 

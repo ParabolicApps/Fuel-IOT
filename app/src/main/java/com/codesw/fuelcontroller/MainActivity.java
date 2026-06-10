@@ -3,38 +3,41 @@ package com.codesw.fuelcontroller;
 import android.Manifest;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.widget.FrameLayout;
-import android.view.View;
-import com.codesw.fuelcontroller.R;
-import androidx.fragment.app.FragmentManager;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.FragmentTransaction;
-
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.FragmentManager;
+import androidx.preference.PreferenceManager;
 
+import com.codesw.fuelcontroller.fragments.DevicesFragment;
+import com.codesw.fuelcontroller.fragments.Frag1FragmentActivity;
+import com.codesw.fuelcontroller.fragments.Frag2FragmentActivity;
+import com.codesw.fuelcontroller.fragments.SettingsFragment;
 import com.codesw.fuelcontroller.receiver.UrlBroadcastReceiver;
 import com.codesw.fuelcontroller.service.Checker;
 import com.codesw.fuelcontroller.utils.SQLiteHandler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.codesw.fuelcontroller.fragments.SettingsFragment;
-import com.codesw.fuelcontroller.fragments.DevicesFragment;
-import com.codesw.fuelcontroller.fragments.Frag1FragmentActivity;
-import com.codesw.fuelcontroller.fragments.Frag2FragmentActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -42,8 +45,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
 
 
@@ -59,6 +66,15 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
     private IntentFilter filter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply theme before super.onCreate
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean isDarkMode = prefs.getBoolean("dark_mode", true);
+        if (isDarkMode) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mainBnv = (BottomNavigationView) findViewById(R.id.main_bnv);
@@ -191,16 +207,21 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
     }
 
 
-
-
-
     private void initializeDemoData() {
-        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        
+        // Only initialize if Real Mode is OFF
+        boolean realMode = prefs.getBoolean("real_mode", false);
+        if (realMode) {
+            Log.d(TAG, "Real Mode active. Skipping demo data initialization.");
+            return;
+        }
+
         if (!prefs.getBoolean("demo_data_initialized", false)) {
             Log.d(TAG, "Initializing demo data for the first time...");
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", java.util.Locale.getDefault());
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", java.util.Locale.getDefault());
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", Locale.getDefault());
 
             // Clear any partial data if it exists
             db.deleteLogs();
@@ -208,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
             // Generate logs for the last 30 days
             // We insert from past to present so getLastInput/Output works correctly
             for (int i = 30; i >= 0; i--) {
-                cal.setTime(new java.util.Date());
+                cal.setTime(new Date());
                 cal.add(Calendar.DATE, -i);
                 String date = dateFormat.format(cal.getTime());
 
@@ -231,6 +252,7 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
             Log.d(TAG, "Demo data initialization complete.");
         }
     }
+
 
     /**
      * Update device's title (Display Name) if it is available
@@ -295,28 +317,57 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         }
 
     }
-    public void exportDB(){
-        String DatabaseName = "data.db";
-        File sd = Environment.getExternalStorageDirectory();
-        File data = Environment.getDataDirectory();
-        java.nio.channels.FileChannel source=null;
-        java.nio.channels.FileChannel destination=null;
-        String currentDBPath = "/data/"+ "com.codesw.fuelcontroller" +"/databases/"+DatabaseName ;
-        String backupDBPath = "exportedController";
-        File currentDB = new File(data, currentDBPath);
-        File backupDB = new File(sd, backupDBPath);
-        try {
-            source = new FileInputStream(currentDB).getChannel();
-            destination = new FileOutputStream(backupDB).getChannel();
-            destination.transferFrom(source, 0, source.size());
-            source.close();
-            destination.close();
-            Log.d(TAG, "exportDB: Your Database is Exported !!");
-        } catch(IOException e) {
+    public void exportDB() {
+        String databaseName = "data.db";
+        File dbFile = getDatabasePath(databaseName);
 
-            Log.e(TAG, "exportDB: "+ e);
-            e.printStackTrace();
+        if (!dbFile.exists()) {
+            Toast.makeText(this, "Database file not found", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        try {
+            String fileName = "FuelGuard_Backup_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".db";
+            ContentResolver resolver = getContentResolver();
+            Uri uri = null;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, "application/x-sqlite3");
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            }
+
+            if (uri != null) {
+                try (InputStream in = new FileInputStream(dbFile);
+                     OutputStream out = resolver.openOutputStream(uri)) {
+                    if (out != null) {
+                        byte[] buf = new byte[1024];
+                        int len;
+                        while ((len = in.read(buf)) > 0) {
+                            out.write(buf, 0, len);
+                        }
+                        Toast.makeText(this, "Database exported to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+                    }
+                }
+            } else {
+                // Fallback for older versions or if URI creation failed
+                File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File exportFile = new File(downloadsDir, fileName);
+                try (InputStream in = new FileInputStream(dbFile);
+                     OutputStream out = new FileOutputStream(exportFile)) {
+                    byte[] buf = new byte[1024];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                    Toast.makeText(this, "Database exported to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "exportDB Error: ", e);
+            Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }

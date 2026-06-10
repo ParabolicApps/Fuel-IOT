@@ -63,6 +63,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private TextView total_input;
 	private TextView total_consume;
 	private TextView monthly_usage_total;
+	private TextView statusText;
 
 	private TextView textview1;//total consume
 	private TextView textview2;//total input
@@ -71,10 +72,17 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private WaveLoadingView waveLoadingView;
 	private SeekBar seekbar1;
 	private LinearLayout card1, card2, card3;
+	private ImageView carLogo, nozzleLogo;
 
 	private final Calendar c = Calendar.getInstance();
 	SQLiteHandler db;
 	private SharedPreferences prefs;
+
+	private boolean isRefilling = false;
+	private double refillStartValue = 0;
+	private long lastDataTime = 0;
+	private android.os.Handler animationHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+	private Runnable nozzleBipRunnable;
 
 	@NonNull
 	@Override
@@ -101,7 +109,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		total_input = _view.findViewById(R.id.total_input);
 		total_consume = _view.findViewById(R.id.total_consume);
 		monthly_usage_total = _view.findViewById(R.id.monthly_usage_total);
-
+		statusText = _view.findViewById(R.id.status_text);
 
 		textview1 = _view.findViewById(R.id.textview1);
 		textview2 = _view.findViewById(R.id.textview2);
@@ -114,6 +122,8 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 		waveLoadingView = _view.findViewById(R.id.waveLoadingView);
 		seekbar1 = _view.findViewById(R.id.seekbar1);
+		carLogo = _view.findViewById(R.id.car_logo);
+		nozzleLogo = _view.findViewById(R.id.nozzle_logo);
 
 		db = new SQLiteHandler(getContext());
 		prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
@@ -149,7 +159,10 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		String progressValue = String.valueOf(myProgress);
 		//set title within the WaveView
 		waveLoadingView.setCenterTitle(progressValue + "%");
-		waveLoadingView.setCenterTitleColor(Color.WHITE);
+		
+		// Set center title color based on theme
+		boolean isDarkMode = prefs != null && prefs.getBoolean("dark_mode", true);
+		waveLoadingView.setCenterTitleColor(isDarkMode ? Color.WHITE : Color.DKGRAY);
 
 		applyPreferences();
 
@@ -168,6 +181,85 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			Intent intent=new Intent(getActivity(), Checker.class);
 			getActivity().startService(intent);
 		}
+		
+		carLogo.setOnLongClickListener(v -> {
+			triggerFuelingSimulation();
+			return true;
+		});
+	}
+
+	private void triggerFuelingSimulation() {
+		if (isRefilling) return;
+		isRefilling = true;
+		refillStartValue = myProgress;
+		startNozzleBip();
+		
+		// Demo counter simulation up to 30L increase
+		android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+		final double targetRefill = 30.0;
+		for (int i = 1; i <= targetRefill; i++) {
+			final int count = i;
+			handler.postDelayed(() -> {
+				if (statusText != null) {
+					statusText.setText("⛽ Fueling... " + count + "L");
+					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
+				}
+				if (count == targetRefill) {
+					// Finish after simulation
+					handler.postDelayed(() -> finishRefill(targetRefill), 1000);
+				}
+			}, i * 500); // Faster increment for 30L demo
+		}
+	}
+
+	private void startNozzleBip() {
+		if (carLogo == null || nozzleLogo == null) return;
+		stopNozzleBip(); // Clear existing
+
+		nozzleBipRunnable = new Runnable() {
+			boolean bipOn = false;
+			@Override
+			public void run() {
+				if (bipOn) {
+					carLogo.animate().alpha(0.8f).setDuration(100).start();
+					nozzleLogo.animate().alpha(0f).setDuration(100).start();
+				} else {
+					carLogo.animate().alpha(0f).setDuration(100).start();
+					nozzleLogo.animate().alpha(1f).setDuration(100).start();
+				}
+				bipOn = !bipOn;
+				animationHandler.postDelayed(this, 250);
+			}
+		};
+		animationHandler.post(nozzleBipRunnable);
+	}
+
+	private void stopNozzleBip() {
+		animationHandler.removeCallbacks(nozzleBipRunnable);
+		if (carLogo != null) carLogo.setAlpha(0.8f);
+		if (nozzleLogo != null) nozzleLogo.setAlpha(0f);
+	}
+
+	private void finishRefill(double refilledAmount) {
+		isRefilling = false;
+		stopNozzleBip();
+		resetStatusText();
+		showRefillSummary(refilledAmount);
+	}
+
+	private void showRefillSummary(double amount) {
+		if (getContext() == null) return;
+		new com.google.android.material.dialog.MaterialAlertDialogBuilder(getContext())
+				.setTitle("Refill Complete")
+				.setMessage("A total of " + String.format(Locale.getDefault(), "%.1f", amount) + " Ltrs has been added to your tank.")
+				.setPositiveButton("OK", null)
+				.show();
+	}
+
+	private void resetStatusText() {
+		if (statusText == null) return;
+		statusText.setText("● Engine: ON  |  📍 Dhaka-Chittagong Highway");
+		statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_green));
 	}
 
 	@Override
@@ -251,10 +343,46 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		Log.d(TAG, "urlReceived: "+counter.split("/")[0]);
 	}
 	public void setProgress(String data){
-		double value = Double.parseDouble(data);
-		waveLoadingView.setProgressValue((int)value);
-		String progressValue = String.valueOf(value);
-		waveLoadingView.setCenterTitle(progressValue + "%");
+		try {
+			double value = Double.parseDouble(data);
+			long currentTime = System.currentTimeMillis();
+			lastDataTime = currentTime;
+			
+			// Detect significant fuel increase (Refill Start)
+			if (!isRefilling && value > myProgress + 1.0) {
+				isRefilling = true;
+				refillStartValue = myProgress;
+				startNozzleBip();
+			}
+			
+			if (isRefilling) {
+				if (statusText != null) {
+					statusText.setText("⛽ Fueling... " + String.format(Locale.getDefault(), "%.1f", value) + "L");
+					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
+				}
+				
+				// Monitor for end of refill (30s inactivity threshold)
+				animationHandler.removeCallbacksAndMessages("refill_check");
+				animationHandler.postAtTime(() -> {
+					if (isRefilling && System.currentTimeMillis() - lastDataTime >= 30000) {
+						finishRefill(value - refillStartValue);
+					}
+				}, "refill_check", android.os.SystemClock.uptimeMillis() + 30000);
 
+			} else {
+				// Regular update: Connection is alive, so Engine is ON
+				if (statusText != null && !statusText.getText().toString().contains("Fueling")) {
+					statusText.setText("● Engine: ON  |  📍 Dhaka-Chittagong Highway");
+					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_green));
+				}
+			}
+			
+			myProgress = value;
+			waveLoadingView.setProgressValue((int)value);
+			String progressValue = String.valueOf(value);
+			waveLoadingView.setCenterTitle(progressValue + "%");
+		} catch (Exception e) {
+			Log.e(TAG, "setProgress Error: " + e);
+		}
 	}
 }
