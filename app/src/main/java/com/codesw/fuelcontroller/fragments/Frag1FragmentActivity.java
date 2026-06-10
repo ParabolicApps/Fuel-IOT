@@ -40,7 +40,10 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.DialogFragment;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
+
 import me.itangqi.waveloadingview.WaveLoadingView;
+import android.content.SharedPreferences;
 
 /**
  * this Fragment is used to show the devices and Statistics
@@ -67,30 +70,31 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 	private WaveLoadingView waveLoadingView;
 	private SeekBar seekbar1;
+	private LinearLayout card1, card2, card3;
 
 	private final Calendar c = Calendar.getInstance();
 	SQLiteHandler db;
+	private SharedPreferences prefs;
 
 	@NonNull
 	@Override
 	public View onCreateView(@NonNull LayoutInflater _inflater, @Nullable ViewGroup _container, @Nullable Bundle _savedInstanceState) {
 		View _view = _inflater.inflate(R.layout.frag1_fragment, _container, false);
 		initialize(_savedInstanceState, _view);
-		initializeLogic();
 		return _view;
 	}
+
+	@Override
+	public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
+		initializeLogic();
+	}
+
 	@Override
 	public void onResume(){
 		super.onResume();
 		Log.d("MainActivity: Fragment: ", "onResume");
-		// Don't know if it will work well as from Fragment instead from an Activity
-
-	}
-	@Override
-	public void onPause() {
-		super.onPause();
-
-		Log.d("MainActivity: Fragment: ", "onPause");
+		applyPreferences();
 	}
 
 	private void initialize(Bundle _savedInstanceState, View _view) {
@@ -103,37 +107,39 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		textview2 = _view.findViewById(R.id.textview2);
 		textview3 = _view.findViewById(R.id.textview3);
 
+		// Parent containers for neon glow toggle
+		card1 = (LinearLayout) total_input.getParent();
+		card2 = (LinearLayout) total_consume.getParent();
+		card3 = (LinearLayout) monthly_usage_total.getParent().getParent();
 
 		waveLoadingView = _view.findViewById(R.id.waveLoadingView);
 		seekbar1 = _view.findViewById(R.id.seekbar1);
 
 		db = new SQLiteHandler(getContext());
+		prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+	}
 
-		// Create The Receiver
+	private void applyPreferences() {
+		if (prefs == null) return;
+		String unit = prefs.getString("measurement_unit", "L");
+		boolean neonMode = prefs.getBoolean("neon_mode", true);
 
+		String suffix = "L".equals(unit) ? " Ltrs" : " Gal";
 
-		seekbar1.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			@Override
-			public void onProgressChanged (SeekBar _param1, int _param2, boolean _param3) {
-				final int _progressValue = _param2;
-				myProgress = _progressValue;
-				waveLoadingView.setProgressValue((int)myProgress);
-				waveLoadingView.setCenterTitle(myProgress +"%");
+		monthly_usage_total.setText(db.getMonthlyTotal(new SimpleDateFormat("MM").format(c.getTimeInMillis())) + suffix);
+		total_input.setText(String.valueOf(db.getTodayTotalInput()) + suffix);
+		total_consume.setText(String.valueOf(db.getTodayTotalUsage()) + suffix);
 
-			}
-
-			@Override
-			public void onStartTrackingTouch(SeekBar _param1) {
-
-			}
-
-			@Override
-			public void onStopTrackingTouch(SeekBar _param2) {
-
-			}
-		});
-
-
+		// Toggle Neon Glow
+		if (neonMode) {
+			card1.setBackgroundResource(R.drawable.card_glow_blue);
+			card2.setBackgroundResource(R.drawable.card_glow_orange);
+			card3.setBackgroundResource(R.drawable.card_glow_green);
+		} else {
+			card1.setBackgroundResource(R.drawable.button_shape);
+			card2.setBackgroundResource(R.drawable.button_shape);
+			card3.setBackgroundResource(R.drawable.button_shape);
+		}
 	}
 
 	private void initializeLogic() {
@@ -145,14 +151,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		waveLoadingView.setCenterTitle(progressValue + "%");
 		waveLoadingView.setCenterTitleColor(Color.WHITE);
 
-
-		monthly_usage_total.setText(db.getMonthlyTotal(new SimpleDateFormat("MM").format(c.getTimeInMillis())));
-		total_input.setText(String.valueOf(db.getTodayTotalInput()) + " Ltrs");
-		total_consume.setText(String.valueOf(db.getTodayTotalUsage()) + " Ltrs");
-
-		// pause charging animation and wave color, depending on charging status
-
-		/*Toast.makeText(context, "isCharging = " + isCharging , Toast.LENGTH_SHORT).show();*/
+		applyPreferences();
 
 		_changeActivityFont("greenscr");
 

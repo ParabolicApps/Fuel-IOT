@@ -14,6 +14,7 @@ import com.codesw.fuelcontroller.R;
 
 /**
  * DevicesFragment has been repurposed to show the Map feature.
+ * The legacy refresh logic has been removed to prevent NullPointerExceptions.
  */
 public class DevicesFragment extends Fragment {
     
@@ -21,6 +22,7 @@ public class DevicesFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Just inflate the layout, no more listeners that depend on global menu items
         return inflater.inflate(R.layout.fragment_devices, container, false);
     }
 

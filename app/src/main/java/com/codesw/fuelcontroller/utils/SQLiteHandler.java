@@ -229,16 +229,16 @@ public class SQLiteHandler extends SQLiteOpenHelper {
 
         db.close();
 
-
-        Map<Integer, List<Integer>> hourlyData = new HashMap<>();
+        Map<Integer, List<Double>> hourlyData = new HashMap<>();
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
         for (Map<String, Object> item : data) {
             LocalTime time = LocalTime.parse(item.get("time").toString(), timeFormatter);
             int hour = time.getHour();
-            int dataValue = Integer.parseInt(item.get("data").toString());
-            List<Integer> dataList = hourlyData.get(hour);
+            // Use Double.parseDouble instead of Integer.parseInt to handle decimals
+            double dataValue = Double.parseDouble(item.get("data").toString());
+            List<Double> dataList = hourlyData.get(hour);
             if (dataList == null) {
-                dataList = new ArrayList<Integer>();
+                dataList = new ArrayList<Double>();
                 hourlyData.put(hour, dataList);
             }
             dataList.add(dataValue);
@@ -247,15 +247,15 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         ArrayList<HashMap<String, Object>> result = new ArrayList<>();
 
         for (int hour = 0; hour < 24; hour++) {
-            List<Integer> dataValues = hourlyData.get(hour);
+            List<Double> dataValues = hourlyData.get(hour);
             //System.out.println("HourlyData "+hourlyData);
             //System.out.println("Hour "+hour);
 
             if (dataValues != null) {
                 //System.out.println("dataValues "+dataValues);
 
-                int firstValue = dataValues.get(0);
-                int lastValue = dataValues.get(dataValues.size() - 1);
+                double firstValue = dataValues.get(0);
+                double lastValue = dataValues.get(dataValues.size() - 1);
 
                 //If only one logs in the hour
                 if (lastValue == firstValue) {
@@ -267,20 +267,21 @@ public class SQLiteHandler extends SQLiteOpenHelper {
                     // This k must be 1 otherwise it will fall to
                     //default(current problematic hour) instead of going to previous hour
                     int k = 1;
-                    List<Integer> lastDataValues = hourlyData.get(String.valueOf(hour - 1));
+                    List<Double> lastDataValues = hourlyData.get(hour - 1);
 
-                    while (lastDataValues == null) {
+                    while (lastDataValues == null && (hour - k) >= 0) {
                         //System.out.println("Trying "+ (hour-k));
                         lastDataValues = hourlyData.get(hour - k);
                         k++;
                     }
-                    //System.out.println("Result"+lastDataValues);
-                    //Getting last value of previous hour
-                    firstValue = lastDataValues.get(lastDataValues.size() - 1);
-
+                    
+                    if (lastDataValues != null) {
+                        //Getting last value of previous hour
+                        firstValue = lastDataValues.get(lastDataValues.size() - 1);
+                    }
                 }
                 //System.out.println("last "+lastValue+", first "+ firstValue);
-                int diff = lastValue - firstValue;
+                double diff = lastValue - firstValue;
                 HashMap<String, Object> mapdata = new HashMap<>();
                 mapdata.put("hour", hour);
                 mapdata.put("value", diff);
@@ -353,9 +354,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
      * we will not differentiate the inputs, Instead here we will add Directly logs
      */
     public void addLogs(String time, String date, String data, String type) {
-        Calendar c = Calendar.getInstance();
-        Log.d(TAG, "Add Log Attempt");
-
+        Log.d(TAG, "Add Log Attempt: Date=" + date + " Type=" + type);
 
         ContentValues values = new ContentValues();
         values.put(KEY_TIME, time); // Time
@@ -363,33 +362,37 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         values.put(KEY_DATA, data); // Data
         values.put(KEY_TYPE, type); // Type
 
-        // Check if row exist for Today's Date and insert/update row
-        if (isRowExist("total", "date", new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis())) && isRowExist("total", "type", type)) {
-
-            Log.d(TAG, "addLogs: Row Exist");
-            Log.d(TAG, "addLogs: Update: "+Double.parseDouble(data) +" - "+getLastInput());
-            updateLogsTotal(date, String.valueOf(Double.parseDouble(data) - getLastInput()), type);
-
-            // addLogs Total Will must be The Portion of update,
-            // Like 40 Liter , but not like 140 Liter after 100 Liter
-
-
+        // Correctly check if row exists for the SPECIFIED Date and Type in the total table
+        if (isTotalRowExist(date, type)) {
+            Log.d(TAG, "addLogs: Row Exist for date: " + date);
+            // Calculate increment based on last entry
+            double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
+            double currentVal = Double.parseDouble(data);
+            updateLogsTotal(date, String.valueOf(currentVal - lastVal), type);
         } else {
-            // addLogs Total Will must be The Portion of update,
-            // Like 40 Liter , but not like 140 Liter after 100 Liter
-            Log.d(TAG, "addLogs: Row Doesn't Exist");
-            addLogsTotal(date, String.valueOf(Double.parseDouble(data) - getLastInput()), type);
-
+            Log.d(TAG, "addLogs: Row Doesn't Exist for date: " + date);
+            double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
+            double currentVal = Double.parseDouble(data);
+            addLogsTotal(date, String.valueOf(currentVal - lastVal), type);
         }
 
         // Inserting Row to all Logs Table
         SQLiteDatabase db = this.getWritableDatabase();
         long id = db.insert(TABLE_LOG, null, values);
-
-
-        db.close(); // Closing database connection
+        db.close();
 
         Log.d(TAG, "New logs inserted into sqlite: " + id);
+    }
+
+    /**
+     * Helper to check if a row exists in TABLE_TOTAL for specific date and type
+     */
+    private boolean isTotalRowExist(String date, String type) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM total WHERE date = ? AND type = ?", new String[]{date, type});
+        boolean exists = cursor != null && cursor.moveToFirst();
+        if (cursor != null) cursor.close();
+        return exists;
     }
 
     /**
@@ -452,15 +455,12 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         String[] selectionArgs = {date, type};
         Cursor cursor = db.rawQuery("SELECT data FROM total WHERE date = ? AND type = ?", selectionArgs);
         if (cursor != null) {
-            Log.d(TAG, "getLogsTotal: Cursor Data Exist, Size " + cursor.getCount() + " Column: " + cursor.getColumnCount());
-            cursor.moveToFirst();
-            Log.d(TAG, "getLogsTotal: " + cursor);
-            count = Double.parseDouble(cursor.getString(0));
-            //Log.d(TAG, "getLogsTotal: getDouble: "+ cursor.getDouble(2)+ " getLogsTotal: getFloat: "+ cursor.getFloat(2)+ " getLogsTotal: getInt: "+ cursor.getInt(2));
-            Log.d(TAG, "getLogsTotal: Count " + count);
-
+            if (cursor.moveToFirst()) {
+                Log.d(TAG, "getLogsTotal: Cursor Data Exist, Size " + cursor.getCount() + " Column: " + cursor.getColumnCount());
+                count = Double.parseDouble(cursor.getString(0));
+                Log.d(TAG, "getLogsTotal: Count " + count);
+            }
             cursor.close();
-            //db.close();
         }
         Log.d(TAG, "getLogsTotal: " + count + " Date: " + date + " Type: " + type);
         return count;
@@ -559,8 +559,10 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     public void setData(String sqlQuery) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor c = db.rawQuery(sqlQuery, null);
-        c.moveToFirst();
-        c.close();
+        if (c != null) {
+            c.moveToFirst();
+            c.close();
+        }
     }
 
     /**

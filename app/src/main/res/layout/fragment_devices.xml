@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dark_bg"
+    android:background="?attr/appBackgroundColor"
     android:orientation="vertical">
 
     <!-- Top Header (Same as others for consistency) -->
@@ -18,7 +18,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_centerVertical="true"
-            android:src="@drawable/baseline_apps_24"
+            android:src="@drawable/ic_map"
             app:tint="@color/neon_blue" />
 
         <TextView
@@ -28,7 +28,7 @@
             android:layout_marginStart="8dp"
             android:layout_toEndOf="@id/fuel_icon"
             android:text="FUEL GUARD | MAP"
-            android:textColor="@color/white"
+            android:textColor="?attr/appHeaderTextColor"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -38,14 +38,14 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:src="@drawable/baseline_settings_24"
-            app:tint="@color/white" />
+            app:tint="?attr/appIconTint" />
     </RelativeLayout>
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/card_bg"
+        app:cardBackgroundColor="?attr/appCardBackgroundColor"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp">
 
@@ -60,7 +60,8 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:src="@drawable/baseline_apps_24"
-                android:alpha="0.2" />
+                android:alpha="0.2"
+                app:tint="?attr/appIconTint" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -86,14 +87,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Current Location"
-                    android:textColor="#B3FFFFFF"
+                    android:textColor="?attr/appSubTextColor"
                     android:textSize="10sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Highway Station 42"
-                    android:textColor="@color/white"
+                    android:textColor="?attr/appContentTextColor"
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>

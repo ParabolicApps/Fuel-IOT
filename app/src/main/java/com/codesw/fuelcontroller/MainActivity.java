@@ -100,6 +100,8 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         filter = new IntentFilter();
         filter.addAction(Checker.URL_FILTER);
         db = new SQLiteHandler(getApplicationContext());
+        initializeDemoData();
+
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED) {
                 requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1000);
@@ -191,6 +193,44 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
 
 
 
+
+    private void initializeDemoData() {
+        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        if (!prefs.getBoolean("demo_data_initialized", false)) {
+            Log.d(TAG, "Initializing demo data for the first time...");
+            Calendar cal = Calendar.getInstance();
+            SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", java.util.Locale.getDefault());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", java.util.Locale.getDefault());
+
+            // Clear any partial data if it exists
+            db.deleteLogs();
+
+            // Generate logs for the last 30 days
+            // We insert from past to present so getLastInput/Output works correctly
+            for (int i = 30; i >= 0; i--) {
+                cal.setTime(new java.util.Date());
+                cal.add(Calendar.DATE, -i);
+                String date = dateFormat.format(cal.getTime());
+
+                // Random cumulative refill data (in)
+                // Assuming data is cumulative for the logic 'current - last' to work
+                double baseRefill = 1000 + (30 - i) * 50; // Starting from 1000L
+                double refill = baseRefill + (Math.random() * 20); 
+                db.addLogs("08:00 AM", date, String.valueOf(refill), "in");
+
+                // Random cumulative consumption data (out)
+                for (int hour = 10; hour < 22; hour += 4) {
+                    cal.set(Calendar.HOUR_OF_DAY, hour);
+                    double baseConsumed = 500 + (30 - i) * 30; // Starting from 500L
+                    double consumed = baseConsumed + (Math.random() * 10);
+                    db.addLogs(timeFormat.format(cal.getTime()), date, String.valueOf(consumed), "out");
+                }
+            }
+
+            prefs.edit().putBoolean("demo_data_initialized", true).apply();
+            Log.d(TAG, "Demo data initialization complete.");
+        }
+    }
 
     /**
      * Update device's title (Display Name) if it is available

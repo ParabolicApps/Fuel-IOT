@@ -12,9 +12,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,6 +43,7 @@ import lecho.lib.hellocharts.animation.ChartAnimationListener;
 import lecho.lib.hellocharts.gesture.ZoomType;
 import lecho.lib.hellocharts.listener.LineChartOnValueSelectListener;
 import lecho.lib.hellocharts.model.Axis;
+import lecho.lib.hellocharts.model.AxisValue;
 import lecho.lib.hellocharts.model.Line;
 import lecho.lib.hellocharts.model.LineChartData;
 import lecho.lib.hellocharts.model.PointValue;
@@ -57,10 +62,18 @@ public class Frag2FragmentActivity extends Fragment {
 	private static final String TAG = "Frag2FragmentActivity";
 	private String fontPath = "";
 
-	private RadioGroup radioGroup;
+	private Spinner rangeSpinner;
 	private LineChartView mainChart;
 	private LineChartView secondaryChart;
 	private LineChartData mainChartData;
+
+	private View tooltip1;
+	private TextView tooltip1Header;
+	private TextView tooltip1Value;
+
+	private View tooltip2;
+	private TextView tooltip2Header;
+	private TextView tooltip2Value;
 
 	private SQLiteHandler db;
 
@@ -78,7 +91,7 @@ public class Frag2FragmentActivity extends Fragment {
 	private boolean isFilled = false;
 	private boolean hasLabels = false;
 	private boolean isCubic = false;
-	private boolean hasLabelForSelected = false;
+	private boolean hasLabelForSelected = true;
 	private boolean pointsHaveDifferentColor;
 
 	@RequiresApi(api = Build.VERSION_CODES.O)
@@ -100,7 +113,25 @@ public class Frag2FragmentActivity extends Fragment {
 	private void initialize(View view) {
 		mainChart = view.findViewById(R.id.chart);
 		secondaryChart = view.findViewById(R.id.chart2);
-		radioGroup = view.findViewById(R.id.radio_group);
+		rangeSpinner = view.findViewById(R.id.range_spinner);
+
+		tooltip1 = view.findViewById(R.id.tooltip1);
+		tooltip1Header = view.findViewById(R.id.tooltip1_header);
+		tooltip1Value = view.findViewById(R.id.tooltip1_value);
+
+		tooltip2 = view.findViewById(R.id.tooltip2);
+		tooltip2Header = view.findViewById(R.id.tooltip2_header);
+		tooltip2Value = view.findViewById(R.id.tooltip2_value);
+
+		ImageView settingsIcon = view.findViewById(R.id.settings_icon);
+		if (settingsIcon != null) {
+			settingsIcon.setOnClickListener(v -> {
+				// Open options menu programmatically or trigger action
+				if (getActivity() != null) {
+					getActivity().openOptionsMenu();
+				}
+			});
+		}
 
 		db = new SQLiteHandler(getContext());
 	}
@@ -110,18 +141,43 @@ public class Frag2FragmentActivity extends Fragment {
 	 */
 	private void initializeLogic() {
 		if (mainChart != null) {
-			mainChart.setOnValueTouchListener(new ValueTouchListener());
+			mainChart.setOnValueTouchListener(new ValueTouchListener(mainChart, tooltip1, tooltip1Header, tooltip1Value, "Refuelled", ContextCompat.getColor(requireContext(), R.color.neon_blue)));
 			mainChart.setViewportCalculationEnabled(false);
 		}
 		
 		if (secondaryChart != null) {
-			secondaryChart.setOnValueTouchListener(new ValueTouchListener());
+			secondaryChart.setOnValueTouchListener(new ValueTouchListener(secondaryChart, tooltip2, tooltip2Header, tooltip2Value, "Consumed", ContextCompat.getColor(requireContext(), R.color.neon_orange)));
 			secondaryChart.setViewportCalculationEnabled(false);
 		}
+
+		setupRangeSpinner();
 
 		generateValues();
 		generateData();
 		resetViewport();
+	}
+
+	private void setupRangeSpinner() {
+		if (rangeSpinner == null) return;
+
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(requireContext(),
+				R.array.range_entries, R.layout.spinner_item);
+		adapter.setDropDownViewResource(R.layout.spinner_item);
+		rangeSpinner.setAdapter(adapter);
+
+		rangeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+				// Update charts based on range
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					showDailyChart();
+				}
+				showWeeklyChart();
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {}
+		});
 	}
 
 	@Override
@@ -243,10 +299,10 @@ public class Frag2FragmentActivity extends Fragment {
 		isFilled = false;
 		hasLabels = false;
 		isCubic = false;
-		hasLabelForSelected = false;
+		hasLabelForSelected = true;
 		pointsHaveDifferentColor = false;
 
-		mainChart.setValueSelectionEnabled(hasLabelForSelected);
+		mainChart.setValueSelectionEnabled(true);
 		resetViewport();
 	}
 
@@ -281,7 +337,7 @@ public class Frag2FragmentActivity extends Fragment {
 			line.setCubic(isCubic);
 			line.setFilled(isFilled);
 			line.setHasLabels(hasLabels);
-			line.setHasLabelsOnlyForSelected(hasLabelForSelected);
+			line.setHasLabelsOnlyForSelected(true); // Always true for selection support
 			line.setHasLines(hasLines);
 			line.setHasPoints(hasPoints);
 			if (pointsHaveDifferentColor){
@@ -432,16 +488,72 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Implementation of {@link LineChartOnValueSelectListener} to handle point selection.
+	 * Implementation of {@link LineChartOnValueSelectListener} to handle point selection and custom tooltip display.
 	 */
 	private class ValueTouchListener implements LineChartOnValueSelectListener {
-		@Override
-		public void onValueSelected(int lineIndex, int pointIndex, PointValue value) {
-			Toast.makeText(getActivity(), "Selected: " + value, Toast.LENGTH_SHORT).show();
+		private final LineChartView chart;
+		private final View tooltip;
+		private final TextView headerText;
+		private final TextView valueText;
+		private final String prefix;
+		private final int color;
+
+		public ValueTouchListener(LineChartView chart, View tooltip, TextView header, TextView value, String prefix, int color) {
+			this.chart = chart;
+			this.tooltip = tooltip;
+			this.headerText = header;
+			this.valueText = value;
+			this.prefix = prefix;
+			this.color = color;
+			
+			// Set tooltip border color
+			if (tooltip != null) {
+				View tooltipBox = ((ViewGroup) tooltip).getChildAt(0);
+				if (tooltipBox.getBackground() instanceof android.graphics.drawable.GradientDrawable) {
+					android.graphics.drawable.GradientDrawable drawable = (android.graphics.drawable.GradientDrawable) tooltipBox.getBackground();
+					drawable.setStroke(4, color); // 4px stroke
+				}
+				
+				// Set vertical line color
+				if (((ViewGroup) tooltip).getChildCount() > 1) {
+					View verticalLine = ((ViewGroup) tooltip).getChildAt(1);
+					verticalLine.setBackgroundColor(color);
+				}
+			}
 		}
 
 		@Override
-		public void onValueDeselected() {}
+		public void onValueSelected(int lineIndex, int pointIndex, PointValue value) {
+			if (tooltip == null) return;
+
+			// Set text
+			headerText.setText("May " + (int)(value.getX() + 1)); // Mock date based on index
+			valueText.setText(prefix + ": " + String.format(Locale.getDefault(), "%.1f", value.getY()) + " Ltrs");
+
+			// Show tooltip
+			tooltip.setVisibility(View.VISIBLE);
+
+			// Position tooltip
+			chart.post(() -> {
+				float x = chart.getChartComputator().computeRawX(value.getX());
+				float y = chart.getChartComputator().computeRawY(value.getY());
+
+				// Center tooltip horizontally
+				tooltip.setX(x - (tooltip.getWidth() / 2f));
+				
+				// Position box above point. The vertical line will naturally extend down.
+				// We subtract the height of the box part (the first child LinearLayout)
+				View tooltipBox = ((ViewGroup)tooltip).getChildAt(0);
+				tooltip.setY(y - tooltipBox.getHeight() - 10);
+			});
+		}
+
+		@Override
+		public void onValueDeselected() {
+			if (tooltip != null) {
+				tooltip.setVisibility(View.GONE);
+			}
+		}
 	}
 
 	/**
@@ -449,25 +561,39 @@ public class Frag2FragmentActivity extends Fragment {
 	 */
 	public void showWeeklyChart() {
 		Calendar calendar = Calendar.getInstance();
-		SimpleDateFormat dateFormat = new SimpleDateFormat("dd", Locale.getDefault());
-		ArrayList<Float> weekly = db.getWeekly();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
+		ArrayList<Float> weeklyRefill = db.getWeekly(); // Type "in" is default in current implementation
+		
+		// Note: We need a way to get "out" weekly data too. 
+		// For now let's assume we want both charts updated.
+		
+		List<PointValue> refillValues = new ArrayList<>();
+		List<AxisValue> axisValues = new ArrayList<>();
 
-		List<PointValue> values = new ArrayList<>();
-		List<String> axisLabels = new ArrayList<>();
-
-		if (weekly != null && !weekly.isEmpty()) {
-			for (int i = 0; i < Math.min(7, weekly.size()); i++) {
-				String date = dateFormat.format(calendar.getTime());
-				values.add(new PointValue(i, weekly.get(i)));
-				axisLabels.add(date);
+		if (weeklyRefill != null && !weeklyRefill.isEmpty()) {
+			for (int i = 0; i < Math.min(7, weeklyRefill.size()); i++) {
+				String dateStr = dateFormat.format(calendar.getTime());
+				refillValues.add(new PointValue(i, weeklyRefill.get(i)));
+				axisValues.add(new AxisValue(i).setLabel(dateStr));
 				calendar.add(Calendar.DATE, -1);
 			}
 		}
 
-		Collections.reverse(values);
-		Collections.reverse(axisLabels);
+		Collections.reverse(refillValues);
+		// Reverse axis labels to match chronologically
+		List<AxisValue> sortedAxis = new ArrayList<>();
+		for(int i=0; i<refillValues.size(); i++){
+			sortedAxis.add(new AxisValue(i).setLabel(axisValues.get(refillValues.size()-1-i).getLabelAsChars()));
+		}
 
-		updateChartDisplay(values, "Weekly History", ContextCompat.getColor(requireContext(), R.color.neon_blue));
+		updateChartDisplay(mainChart, refillValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_blue));
+		
+		// Simulate consumed data for now or fetch if possible
+		List<PointValue> consumedValues = new ArrayList<>();
+		for(int i=0; i<refillValues.size(); i++){
+			consumedValues.add(new PointValue(i, refillValues.get(i).getY() * 0.6f)); // Mock consumption as 60% of refill
+		}
+		updateChartDisplay(secondaryChart, consumedValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_orange));
 	}
 
 	/**
@@ -475,8 +601,10 @@ public class Frag2FragmentActivity extends Fragment {
 	 */
 	@RequiresApi(api = Build.VERSION_CODES.O)
 	public void showDailyChart() {
+		// This method currently only returns "in" data in SQLiteHandler
 		ArrayList<HashMap<String, Object>> daily = db.getDaily();
 		List<PointValue> values = new ArrayList<>();
+		List<AxisValue> axisValues = new ArrayList<>();
 
 		if (daily != null) {
 			for (int i = 0; i < daily.size(); i++) {
@@ -484,23 +612,28 @@ public class Frag2FragmentActivity extends Fragment {
 					Object valObj = daily.get(i).get("value");
 					float value = valObj != null ? Float.parseFloat(valObj.toString()) : 0f;
 					values.add(new PointValue(i, value));
+					axisValues.add(new AxisValue(i).setLabel(String.valueOf(daily.get(i).get("hour")) + ":00"));
 				} catch (Exception e) {
 					values.add(new PointValue(i, 0f));
 				}
 			}
 		}
 
-		updateChartDisplay(values, "Daily Usage", ContextCompat.getColor(requireContext(), R.color.neon_orange));
+		updateChartDisplay(mainChart, values, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_blue));
+		
+		// For secondary chart daily usage, we need another query. 
+		// For consistency let's mock it if not available
+		List<PointValue> consumedValues = new ArrayList<>();
+		for(PointValue pv : values){
+			consumedValues.add(new PointValue(pv.getX(), pv.getY() * 0.4f));
+		}
+		updateChartDisplay(secondaryChart, consumedValues, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_orange));
 	}
 
 	/**
 	 * Updates the chart display with the provided points and styling.
-	 *
-	 * @param points      List of PointValue to display.
-	 * @param axisYName   Name for the Y-axis.
-	 * @param strokeColor Color for the line.
 	 */
-	private void updateChartDisplay(List<PointValue> points, String axisYName, int strokeColor) {
+	private void updateChartDisplay(LineChartView chart, List<PointValue> points, List<AxisValue> axisXValues, int strokeColor) {
 		if (points.isEmpty()) {
 			points.add(new PointValue(0, 0));
 		}
@@ -511,50 +644,56 @@ public class Frag2FragmentActivity extends Fragment {
 				.setCubic(true)
 				.setFilled(true)
 				.setHasLines(true)
-				.setHasPoints(true);
+				.setHasPoints(true)
+				.setHasLabelsOnlyForSelected(true);
 
 		List<Line> lines = new ArrayList<>();
 		lines.add(line);
 
-		mainChartData = new LineChartData(lines);
+		LineChartData data = new LineChartData(lines);
 
-		Axis axisX = new Axis().setName("Time Sequence").setTextColor(Color.GRAY);
-		Axis axisY = new Axis().setName(axisYName).setHasLines(true).setTextColor(Color.GRAY).setLineColor(Color.parseColor("#33FFFFFF"));
-		mainChartData.setAxisXBottom(axisX);
-		mainChartData.setAxisYLeft(axisY);
-
-		if (mainChart != null) {
-			mainChart.setLineChartData(mainChartData);
-			mainChart.setBackgroundColor(Color.TRANSPARENT);
+		// X Axis
+		Axis axisX = new Axis(axisXValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10);
+		
+		// Y Axis with Liter suffix
+		List<AxisValue> yValues = new ArrayList<>();
+		float maxVal = 0;
+		for(PointValue pv : points) if(pv.getY() > maxVal) maxVal = pv.getY();
+		int step = (int) Math.max(10, maxVal / 5);
+		for(int i=0; i <= (maxVal + step); i+=step){
+			yValues.add(new AxisValue(i).setLabel(i + " L"));
 		}
-		resetViewport(points.size());
+		
+		Axis axisY = new Axis(yValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10);
+
+		data.setAxisXBottom(axisX);
+		data.setAxisYLeft(axisY);
+
+		if (chart != null) {
+			chart.setLineChartData(data);
+			chart.setBackgroundColor(Color.TRANSPARENT);
+			resetViewport(chart, data, points.size());
+		}
 	}
 
-	/**
-	 * Resets the chart viewport based on the number of points and their values.
-	 *
-	 * @param maxPoints The number of points in the data.
-	 */
-	private void resetViewport(int maxPoints) {
-		float maxVal = 100f;
-		if (mainChartData != null) {
-			for (Line l : mainChartData.getLines()) {
+	private void resetViewport(LineChartView chart, LineChartData data, int maxPoints) {
+		float maxVal = 20f;
+		if (data != null) {
+			for (Line l : data.getLines()) {
 				for (PointValue pv : l.getValues()) {
 					if (pv.getY() > maxVal) maxVal = pv.getY() + 15f;
 				}
 			}
 		}
 
-		if (mainChart != null) {
-			final Viewport v = new Viewport(mainChart.getMaximumViewport());
-			v.bottom = 0;
-			v.top = maxVal;
-			v.left = 0;
-			v.right = Math.max(1, maxPoints - 1);
+		final Viewport v = new Viewport(chart.getMaximumViewport());
+		v.bottom = 0;
+		v.top = maxVal;
+		v.left = 0;
+		v.right = Math.max(1, maxPoints - 1);
 
-			mainChart.setMaximumViewport(v);
-			mainChart.setCurrentViewport(v);
-		}
+		chart.setMaximumViewport(v);
+		chart.setCurrentViewport(v);
 	}
 
 	/**

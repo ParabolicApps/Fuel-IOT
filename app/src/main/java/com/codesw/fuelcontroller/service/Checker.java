@@ -7,6 +7,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import androidx.preference.PreferenceManager;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
@@ -96,17 +97,21 @@ class CheckerThread implements Runnable
     @Override
     public void run()
     {
-        // 2 sec of interval by default
-        String intervals=sharedpreferences.getString("intervals", "2000");
+        // Get settings from Default SharedPreferences
+        SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(_context);
+        
         synchronized (this) {
             int count = 0;
             while (_isRunning) {
                 try {
-                    //Sample String For Checking if its Running all The time
-                    Log.d(TAG, "hey");
+                    // Update intervals dynamically from settings
+                    String frequency = defaultPrefs.getString("sync_frequency", "30");
+                    long intervals = Long.parseLong(frequency) * 1000;
+                    
+                    Log.d(TAG, "Syncing data. Frequency: " + frequency + "s");
                     read();
-                    //Intervals of waiting 3s in millisecond
-                    wait(Integer.parseInt(intervals));
+                    
+                    wait(intervals);
                     count++;
                     if(count > 1)
                     {

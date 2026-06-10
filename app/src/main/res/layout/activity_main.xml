@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/dark_bg"
+    android:background="?attr/appBackgroundColor"
     tools:context="com.codesw.fuelcontroller.MainActivity" >
 
     <com.google.android.material.appbar.AppBarLayout
@@ -32,9 +32,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="@color/dark_bg"
-        app:itemIconTint="@color/bottom_nav_color"
-        app:itemTextColor="@color/bottom_nav_color"
+        android:background="?attr/appBackgroundColor"
+        app:itemIconTint="?attr/bottomNavIconColor"
+        app:itemTextColor="?attr/bottomNavIconColor"
         app:labelVisibilityMode="selected"
         app:menu="@menu/bottom_nav_menu" />
 

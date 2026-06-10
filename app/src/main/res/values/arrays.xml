@@ -9,4 +9,44 @@
         <item>reply</item>
         <item>reply_all</item>
     </string-array>
+
+    <!-- Unit Preference -->
+    <string-array name="unit_entries">
+        <item>Liters (L)</item>
+        <item>Gallons (Gal)</item>
+    </string-array>
+    <string-array name="unit_values">
+        <item>L</item>
+        <item>Gal</item>
+    </string-array>
+
+    <!-- Frequency Preference -->
+    <string-array name="frequency_entries">
+        <item>Every 5 seconds</item>
+        <item>Every 30 seconds</item>
+        <item>Every minute</item>
+        <item>Every 5 minutes</item>
+    </string-array>
+    <string-array name="frequency_values">
+        <item>5</item>
+        <item>30</item>
+        <item>60</item>
+        <item>300</item>
+    </string-array>
+
+    <!-- Range Preference -->
+    <string-array name="range_entries">
+        <item>Last 7 Days</item>
+        <item>Last 30 Days</item>
+        <item>Last 3 Months</item>
+        <item>Last 6 Months</item>
+        <item>Last Year</item>
+    </string-array>
+    <string-array name="range_values">
+        <item>7</item>
+        <item>30</item>
+        <item>90</item>
+        <item>180</item>
+        <item>365</item>
+    </string-array>
 </resources>

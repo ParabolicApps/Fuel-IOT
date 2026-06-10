@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import androidx.preference.PreferenceManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -78,8 +79,11 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
 
         {
             Calendar c = Calendar.getInstance();
-            // Default URL For MCU Data
-            String url=sharedpreferences.getString("url", "http://192.168.4.1");
+            SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(_mainContext);
+            
+            // Default URL For MCU Data from settings
+            String url = defaultPrefs.getString("server_url", "http://192.168.4.1/data");
+
             // Store Current Previous Data
             String incoming=sharedpreferences.getString("incoming", "0.00");
             String outcoming=sharedpreferences.getString("outcoming", "0.00");
@@ -103,53 +107,72 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
             // Match if its a new data, Otherwise ignore
             // Storing old data and checking if its not new
 
-            if(inputData.contains(incoming)){
+            if (inputData.contains(incoming)) {
                 Log.d(TAG, "doInBackground: Ignoring input: " + incoming);
-                // Ignore if the data is not changed or its not a new Update
-                //Log.wtf("Checker","ignored");
-                // i just Tried to keep coming similar data ignored, but i dont know why
-                // Its not working
                 sendData(text);
             } else {
                 Log.d(TAG, "doInBackground: Sending:");
-                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()),new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()),inputData, "in");
+                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), inputData, "in");
                 sendData(text);
 
-                editor.putString("incoming",inputData);
+                // Low Fuel Alert logic
+                boolean lowFuelAlertEnabled = defaultPrefs.getBoolean("low_fuel_alert", true);
+                if (lowFuelAlertEnabled) {
+                    try {
+                        double fuelLevel = Double.parseDouble(inputData);
+                        int threshold = Integer.parseInt(defaultPrefs.getString("low_fuel_threshold", "15"));
+                        if (fuelLevel <= threshold) {
+                            showNotification("Low Fuel Alert", "Your fuel level is " + fuelLevel + "%. Please refill soon.");
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Alert Error: " + e);
+                    }
+                }
+
+                editor.putString("incoming", inputData);
                 editor.commit();
-                //Log.wtf("Checker","skipin: "+text);
             }
             String outData = text.split("/")[1];
-            if(outData.contains(outcoming)){
-                Log.d(TAG, "doInBackground: Ignoring Input: "+outcoming);
-                // Ignore if the data is not changed or its not a new Update
-                //Log.wtf("Checker","ignored");
-                // i just Tried to keep coming similar data ignored, but i dont know why
-                // Its not working
+            if (outData.contains(outcoming)) {
+                Log.d(TAG, "doInBackground: Ignoring Input: " + outcoming);
                 sendData(text);
             } else {
                 Log.d(TAG, "doInBackground:  Sending:");
-                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()),new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()),outData, "out");
+                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), outData, "out");
 
-                //We cant send two Broadcast, we would need two method and uch more complexity
-                //We Would Split data in homepage
-                //
+                // Refill Alert logic
+                boolean refillAlertEnabled = defaultPrefs.getBoolean("refill_alert", true);
+                if (refillAlertEnabled) {
+                    showNotification("Refill Detected", "A fuel refill of " + outData + " Ltrs has been logged.");
+                }
+
                 sendData(text);
 
-                editor.putString("outcoming",outData);
+                editor.putString("outcoming", outData);
                 editor.commit();
-                //Log.wtf("Checker","skipin: "+text);
             }
+        } catch (Exception ee) {
+            Log.e(TAG, "doInBackground: Exception: " + ee);
         }
-
-        catch (Exception ee) {
-
-            Log.e(TAG, "doInBackground: Exception: "+ee);
-
-        }
-
-        return  "";
-
+        return "";
     }
 
+    private void showNotification(String title, String message) {
+        NotificationManager notificationManager = (NotificationManager) _mainContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        String channelId = "fuel_alerts";
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            android.app.NotificationChannel channel = new android.app.NotificationChannel(channelId, "Fuel Alerts", NotificationManager.IMPORTANCE_HIGH);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(_mainContext, channelId)
+                .setSmallIcon(R.drawable.baseline_apps_24)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+    }
 }
