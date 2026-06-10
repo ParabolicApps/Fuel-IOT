@@ -12,9 +12,13 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.preference.PreferenceManager;
+
 import com.codesw.fuelcontroller.ConfigureDeviceActivity;
 import com.codesw.fuelcontroller.R;
+import com.codesw.fuelcontroller.fragments.DevicesFragment;
 import com.codesw.fuelcontroller.network.PostTask;
+import com.google.android.material.card.MaterialCardView;
 
 /**
  * A layout show Devices
@@ -23,6 +27,7 @@ import com.codesw.fuelcontroller.network.PostTask;
 public class Device extends RelativeLayout{
     private TextView deviceName;
     private TextView deviceAddress;
+    private MaterialCardView cardView;
     private Switch deviceSwitch;
     public String ipAddr;
     private Context myContext;
@@ -40,6 +45,36 @@ public class Device extends RelativeLayout{
         View.inflate(context, R.layout.device, this);
         deviceName = this.findViewById(R.id.deviceName);
         deviceAddress = this.findViewById(R.id.lv_item_tv_subtitle);
+        cardView = this.findViewById(R.id.device_card);
+
+        setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (ipAddr != null) {
+                    String fullUrl = "http://" + ipAddr + "/data";
+                    PreferenceManager.getDefaultSharedPreferences(context)
+                            .edit()
+                            .putString("server_url", fullUrl)
+                            .apply();
+                    Toast.makeText(context, "Selected: " + deviceName.getText() + " (" + ipAddr + ")", Toast.LENGTH_SHORT).show();
+                    
+                    // Notify fragment to refresh glow
+                    if (myContext != null) {
+                        // We can just update all children of the parent view.
+                        if (getParent() instanceof android.view.ViewGroup) {
+                            android.view.ViewGroup parent = (android.view.ViewGroup) getParent();
+                            for (int i = 0; i < parent.getChildCount(); i++) {
+                                View child = parent.getChildAt(i);
+                                if (child instanceof Device) {
+                                    ((Device) child).refreshSelectionGlow();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
         deviceName.setOnLongClickListener(new OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -91,6 +126,16 @@ public class Device extends RelativeLayout{
     public void setDeviceEnabled(boolean status) {
         deviceName.setEnabled(status);
         //deviceSwitch.setEnabled(status);
+        refreshSelectionGlow();
+    }
+
+    public void refreshSelectionGlow() {
+        String currentUrl = PreferenceManager.getDefaultSharedPreferences(myContext).getString("server_url", "");
+        if (ipAddr != null && currentUrl.contains(ipAddr)) {
+            cardView.setBackgroundResource(R.drawable.card_glow_blue);
+        } else {
+            cardView.setBackgroundResource(R.drawable.button_shape);
+        }
     }
 
     private class SetDevice extends PostTask {

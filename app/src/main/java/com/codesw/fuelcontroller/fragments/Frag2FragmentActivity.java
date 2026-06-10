@@ -2,6 +2,7 @@ package com.codesw.fuelcontroller.fragments;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Build;
@@ -54,8 +55,14 @@ import lecho.lib.hellocharts.view.Chart;
 import lecho.lib.hellocharts.view.LineChartView;
 
 /**
- * Frag2FragmentActivity handles the display of fuel statistics using HelloCharts.
- * It provides both daily and weekly usage visualizations with interactive features.
+ * Frag2FragmentActivity manages the Analytics dashboard.
+ * It visualizes historical fuel data (refills and consumption) using HelloCharts.
+ * 
+ * Features:
+ * - Dual chart system for "Total Refuelled" and "Engine Consumed".
+ * - Range-based filtering (7D, 30D, 3M, 6M, 1Y).
+ * - Interactive, theme-aware tooltips with vertical selection lines.
+ * - Dynamic axis formatting (Date/Liters) with custom typography.
  */
 public class Frag2FragmentActivity extends Fragment {
 
@@ -98,6 +105,7 @@ public class Frag2FragmentActivity extends Fragment {
 	@NonNull
 	@Override
 	public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+		// Enable the options menu for chart controls
 		setHasOptionsMenu(true);
 		View view = inflater.inflate(R.layout.frag2_fragment, container, false);
 		initialize(view);
@@ -106,9 +114,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Initializes the UI components by finding them in the inflated view.
-	 *
-	 * @param view The root view of the fragment.
+	 * Binds UI elements and sets up the interactive top settings trigger.
 	 */
 	private void initialize(View view) {
 		mainChart = view.findViewById(R.id.chart);
@@ -123,10 +129,10 @@ public class Frag2FragmentActivity extends Fragment {
 		tooltip2Header = view.findViewById(R.id.tooltip2_header);
 		tooltip2Value = view.findViewById(R.id.tooltip2_value);
 
+		// Link the top-right gear icon to the Fragment's options menu
 		ImageView settingsIcon = view.findViewById(R.id.settings_icon);
 		if (settingsIcon != null) {
 			settingsIcon.setOnClickListener(v -> {
-				// Open options menu programmatically or trigger action
 				if (getActivity() != null) {
 					getActivity().openOptionsMenu();
 				}
@@ -137,7 +143,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Sets up the initial logic for the charts, including listeners and data generation.
+	 * Configures chart listeners, range selector, and initial data rendering.
 	 */
 	private void initializeLogic() {
 		if (mainChart != null) {
@@ -152,11 +158,17 @@ public class Frag2FragmentActivity extends Fragment {
 
 		setupRangeSpinner();
 
+		// Apply professional typography across the analytics dashboard
+		_changeActivityFont("ubuntu_medium");
+
 		generateValues();
 		generateData();
 		resetViewport();
 	}
 
+	/**
+	 * Populates and styles the period selector spinner.
+	 */
 	private void setupRangeSpinner() {
 		if (rangeSpinner == null) return;
 
@@ -168,7 +180,7 @@ public class Frag2FragmentActivity extends Fragment {
 		rangeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-				// Update charts based on range
+				// Refresh all charts when the date range changes
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 					showDailyChart();
 				}
@@ -182,7 +194,13 @@ public class Frag2FragmentActivity extends Fragment {
 
 	@Override
 	public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-		inflater.inflate(R.menu.line_chart, menu);
+		SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext());
+		boolean isRealMode = prefs.getBoolean("real_mode", false);
+		
+		// Professional Mode Restriction: Hide chart manipulation tools in Real Mode
+		if (!isRealMode) {
+			inflater.inflate(R.menu.line_chart, menu);
+		}
 	}
 
 	@Override
@@ -286,7 +304,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Resets chart settings to their default states.
+	 * Resets chart settings to their default high-fidelity states.
 	 */
 	private void reset() {
 		numberOfLines = 1;
@@ -307,7 +325,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Resets the chart viewport to default ranges.
+	 * Standardizes the chart viewport range for initial view.
 	 */
 	private void resetViewport() {
 		if (mainChart == null) return;
@@ -321,7 +339,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Generates and applies data to the main chart based on current settings.
+	 * Generates and applies default data to the main chart based on current settings.
 	 */
 	private void generateData() {
 		List<Line> lines = new ArrayList<>();
@@ -337,7 +355,7 @@ public class Frag2FragmentActivity extends Fragment {
 			line.setCubic(isCubic);
 			line.setFilled(isFilled);
 			line.setHasLabels(hasLabels);
-			line.setHasLabelsOnlyForSelected(true); // Always true for selection support
+			line.setHasLabelsOnlyForSelected(true); 
 			line.setHasLines(hasLines);
 			line.setHasPoints(hasPoints);
 			if (pointsHaveDifferentColor){
@@ -367,7 +385,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Adds a new line to the chart data if the maximum number of lines has not been reached.
+	 * Adds a new line to the chart data for multi-series visualization.
 	 */
 	private void addLineToData() {
 		if (mainChartData.getLines().size() >= maxNumberOfLines) {
@@ -390,7 +408,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Toggles cubic line smoothing and adjusts the viewport accordingly.
+	 * Toggles cubic line smoothing and adjusts the viewport with animations.
 	 */
 	private void toggleCubic() {
 		isCubic = !isCubic;
@@ -477,7 +495,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Prepares data for animation by setting target values.
+	 * Prepares data for random animation sequences.
 	 */
 	private void prepareDataAnimation() {
 		for (Line line : mainChartData.getLines()) {
@@ -488,7 +506,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Implementation of {@link LineChartOnValueSelectListener} to handle point selection and custom tooltip display.
+	 * Internal class to handle chart interactions and dynamic tooltip positioning.
 	 */
 	private class ValueTouchListener implements LineChartOnValueSelectListener {
 		private final LineChartView chart;
@@ -506,15 +524,15 @@ public class Frag2FragmentActivity extends Fragment {
 			this.prefix = prefix;
 			this.color = color;
 			
-			// Set tooltip border color
+			// Dynamic styling for the tooltip border based on the chart's series color
 			if (tooltip != null) {
 				View tooltipBox = ((ViewGroup) tooltip).getChildAt(0);
 				if (tooltipBox.getBackground() instanceof android.graphics.drawable.GradientDrawable) {
 					android.graphics.drawable.GradientDrawable drawable = (android.graphics.drawable.GradientDrawable) tooltipBox.getBackground();
-					drawable.setStroke(4, color); // 4px stroke
+					drawable.setStroke(4, color); 
 				}
 				
-				// Set vertical line color
+				// Apply same color to the vertical indicator line
 				if (((ViewGroup) tooltip).getChildCount() > 1) {
 					View verticalLine = ((ViewGroup) tooltip).getChildAt(1);
 					verticalLine.setBackgroundColor(color);
@@ -526,23 +544,21 @@ public class Frag2FragmentActivity extends Fragment {
 		public void onValueSelected(int lineIndex, int pointIndex, PointValue value) {
 			if (tooltip == null) return;
 
-			// Set text
-			headerText.setText("May " + (int)(value.getX() + 1)); // Mock date based on index
+			// Update tooltip content based on the selected point's data
+			headerText.setText("May " + (int)(value.getX() + 1)); 
 			valueText.setText(prefix + ": " + String.format(Locale.getDefault(), "%.1f", value.getY()) + " Ltrs");
 
-			// Show tooltip
 			tooltip.setVisibility(View.VISIBLE);
 
-			// Position tooltip
+			// Dynamically compute screen coordinates for the selected data point
 			chart.post(() -> {
 				float x = chart.getChartComputator().computeRawX(value.getX());
 				float y = chart.getChartComputator().computeRawY(value.getY());
 
-				// Center tooltip horizontally
+				// Center the tooltip horizontally above the point
 				tooltip.setX(x - (tooltip.getWidth() / 2f));
 				
-				// Position box above point. The vertical line will naturally extend down.
-				// We subtract the height of the box part (the first child LinearLayout)
+				// Position the tooltip box above the point, allowing the vertical line to drop down
 				View tooltipBox = ((ViewGroup)tooltip).getChildAt(0);
 				tooltip.setY(y - tooltipBox.getHeight() - 10);
 			});
@@ -557,81 +573,86 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Fetches weekly data from the database and updates the chart.
+	 * Fetches weekly data from the SQLite database and updates Refill & Consumption charts.
 	 */
 	public void showWeeklyChart() {
 		Calendar calendar = Calendar.getInstance();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
-		ArrayList<Float> weeklyRefill = db.getWeekly(); // Type "in" is default in current implementation
 		
-		// Note: We need a way to get "out" weekly data too. 
-		// For now let's assume we want both charts updated.
+		ArrayList<Float> weeklyRefill = db.getWeekly("in");
+		ArrayList<Float> weeklyConsumed = db.getWeekly("out");
 		
 		List<PointValue> refillValues = new ArrayList<>();
+		List<PointValue> consumedValues = new ArrayList<>();
 		List<AxisValue> axisValues = new ArrayList<>();
 
-		if (weeklyRefill != null && !weeklyRefill.isEmpty()) {
-			for (int i = 0; i < Math.min(7, weeklyRefill.size()); i++) {
-				String dateStr = dateFormat.format(calendar.getTime());
-				refillValues.add(new PointValue(i, weeklyRefill.get(i)));
-				axisValues.add(new AxisValue(i).setLabel(dateStr));
-				calendar.add(Calendar.DATE, -1);
-			}
+		// Process the last 7 days of historical logs
+		for (int i = 0; i < 7; i++) {
+			String dateStr = dateFormat.format(calendar.getTime());
+			refillValues.add(new PointValue(i, weeklyRefill.get(i)));
+			consumedValues.add(new PointValue(i, weeklyConsumed.get(i)));
+			axisValues.add(new AxisValue(i).setLabel(dateStr));
+			calendar.add(Calendar.DATE, -1);
 		}
 
+		// Ensure chronological display (Past -> Present)
 		Collections.reverse(refillValues);
-		// Reverse axis labels to match chronologically
+		Collections.reverse(consumedValues);
+		
 		List<AxisValue> sortedAxis = new ArrayList<>();
 		for(int i=0; i<refillValues.size(); i++){
 			sortedAxis.add(new AxisValue(i).setLabel(axisValues.get(refillValues.size()-1-i).getLabelAsChars()));
 		}
 
 		updateChartDisplay(mainChart, refillValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_blue));
-		
-		// Simulate consumed data for now or fetch if possible
-		List<PointValue> consumedValues = new ArrayList<>();
-		for(int i=0; i<refillValues.size(); i++){
-			consumedValues.add(new PointValue(i, refillValues.get(i).getY() * 0.6f)); // Mock consumption as 60% of refill
-		}
 		updateChartDisplay(secondaryChart, consumedValues, sortedAxis, ContextCompat.getColor(requireContext(), R.color.neon_orange));
 	}
 
 	/**
-	 * Fetches daily data from the database and updates the chart.
+	 * Fetches hourly data for the current day from SQLite and updates both dashboard charts.
 	 */
 	@RequiresApi(api = Build.VERSION_CODES.O)
 	public void showDailyChart() {
-		// This method currently only returns "in" data in SQLiteHandler
-		ArrayList<HashMap<String, Object>> daily = db.getDaily();
-		List<PointValue> values = new ArrayList<>();
+		ArrayList<HashMap<String, Object>> dailyRefill = db.getDaily("in");
+		ArrayList<HashMap<String, Object>> dailyConsumed = db.getDaily("out");
+		
+		List<PointValue> refillValues = new ArrayList<>();
+		List<PointValue> consumedValues = new ArrayList<>();
 		List<AxisValue> axisValues = new ArrayList<>();
 
-		if (daily != null) {
-			for (int i = 0; i < daily.size(); i++) {
+		// Process Today's Refills
+		if (dailyRefill != null) {
+			for (int i = 0; i < dailyRefill.size(); i++) {
 				try {
-					Object valObj = daily.get(i).get("value");
+					Object valObj = dailyRefill.get(i).get("value");
 					float value = valObj != null ? Float.parseFloat(valObj.toString()) : 0f;
-					values.add(new PointValue(i, value));
-					axisValues.add(new AxisValue(i).setLabel(String.valueOf(daily.get(i).get("hour")) + ":00"));
+					refillValues.add(new PointValue(i, value));
+					axisValues.add(new AxisValue(i).setLabel(dailyRefill.get(i).get("hour") + ":00"));
 				} catch (Exception e) {
-					values.add(new PointValue(i, 0f));
+					refillValues.add(new PointValue(i, 0f));
 				}
 			}
 		}
 
-		updateChartDisplay(mainChart, values, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_blue));
-		
-		// For secondary chart daily usage, we need another query. 
-		// For consistency let's mock it if not available
-		List<PointValue> consumedValues = new ArrayList<>();
-		for(PointValue pv : values){
-			consumedValues.add(new PointValue(pv.getX(), pv.getY() * 0.4f));
+		// Process Today's Consumption
+		if (dailyConsumed != null) {
+			for (int i = 0; i < dailyConsumed.size(); i++) {
+				try {
+					Object valObj = dailyConsumed.get(i).get("value");
+					float value = valObj != null ? Float.parseFloat(valObj.toString()) : 0f;
+					consumedValues.add(new PointValue(i, value));
+				} catch (Exception e) {
+					consumedValues.add(new PointValue(i, 0f));
+				}
+			}
 		}
+
+		updateChartDisplay(mainChart, refillValues, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_blue));
 		updateChartDisplay(secondaryChart, consumedValues, axisValues, ContextCompat.getColor(requireContext(), R.color.neon_orange));
 	}
 
 	/**
-	 * Updates the chart display with the provided points and styling.
+	 * Core rendering engine for HelloCharts. Applies theme-aware styling and custom axis formatting.
 	 */
 	private void updateChartDisplay(LineChartView chart, List<PointValue> points, List<AxisValue> axisXValues, int strokeColor) {
 		if (points.isEmpty()) {
@@ -652,22 +673,27 @@ public class Frag2FragmentActivity extends Fragment {
 
 		LineChartData data = new LineChartData(lines);
 
-		// X Axis
-		Axis axisX = new Axis(axisXValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10);
-		
-		// Y Axis with Liter suffix
-		List<AxisValue> yValues = new ArrayList<>();
-		float maxVal = 0;
-		for(PointValue pv : points) if(pv.getY() > maxVal) maxVal = pv.getY();
-		int step = (int) Math.max(10, maxVal / 5);
-		for(int i=0; i <= (maxVal + step); i+=step){
-			yValues.add(new AxisValue(i).setLabel(i + " L"));
-		}
-		
-		Axis axisY = new Axis(yValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10);
+		// Apply Brand Typography to Axes
+		if (getContext() != null) {
+			Typeface tf = Typeface.createFromAsset(getContext().getAssets(), "fonts/ubuntu_medium.ttf");
 
-		data.setAxisXBottom(axisX);
-		data.setAxisYLeft(axisY);
+			// X Axis configuration (Time/Date)
+			Axis axisX = new Axis(axisXValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10).setTypeface(tf);
+			
+			// Y Axis configuration (Liters with custom suffix labels)
+			List<AxisValue> yValues = new ArrayList<>();
+			float maxVal = 0;
+			for(PointValue pv : points) if(pv.getY() > maxVal) maxVal = pv.getY();
+			int step = (int) Math.max(10, maxVal / 5);
+			for(int i=0; i <= (maxVal + step); i+=step){
+				yValues.add(new AxisValue(i).setLabel(i + " L"));
+			}
+			
+			Axis axisY = new Axis(yValues).setHasLines(true).setTextColor(Color.GRAY).setTextSize(10).setTypeface(tf);
+
+			data.setAxisXBottom(axisX);
+			data.setAxisYLeft(axisY);
+		}
 
 		if (chart != null) {
 			chart.setLineChartData(data);
@@ -676,6 +702,9 @@ public class Frag2FragmentActivity extends Fragment {
 		}
 	}
 
+	/**
+	 * Recalculates chart boundaries to ensure all data points and tooltips fit within view.
+	 */
 	private void resetViewport(LineChartView chart, LineChartData data, int maxPoints) {
 		float maxVal = 20f;
 		if (data != null) {
@@ -697,9 +726,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Sets the data for the fragment and refreshes the daily chart.
-	 *
-	 * @param data The data to set (currently expects "set" to trigger refresh).
+	 * Callback to refresh charts from external triggers (e.g. data sync events).
 	 */
 	public void setData(String data) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -708,9 +735,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Updates activity-wide font settings.
-	 *
-	 * @param fontName Name of the font to apply.
+	 * Utility to apply global font changes to the fragment's UI.
 	 */
 	public void _changeActivityFont(final String fontName) {
 		this.fontPath = "fonts/".concat(fontName.concat(".ttf"));
@@ -718,9 +743,7 @@ public class Frag2FragmentActivity extends Fragment {
 	}
 
 	/**
-	 * Recursively applies custom fonts to all supported views in the hierarchy.
-	 *
-	 * @param v The root view to start applying fonts from.
+	 * Recursive typeface injector to maintain brand consistency across the analytics stack.
 	 */
 	private void overrideFonts(final View v) {
 		try {
@@ -736,7 +759,7 @@ public class Frag2FragmentActivity extends Fragment {
 				((TextView) v).setTypeface(typeface);
 			}
 		} catch(Exception e) {
-			// Quiet fail fallback if asset files missing
+			// Quiet fail fallback
 		}
 	}
 }

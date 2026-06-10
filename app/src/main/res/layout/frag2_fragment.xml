@@ -32,8 +32,8 @@
 
                 <ImageView
                     android:id="@+id/fuel_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_centerVertical="true"
                     android:src="@drawable/ic_analytics"
                     app:tint="@color/neon_blue" />
@@ -42,17 +42,18 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="10dp"
                     android:layout_toEndOf="@id/fuel_icon"
                     android:text="FUEL GUARD"
                     android:textColor="?attr/appHeaderTextColor"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
 
                 <ImageView
                     android:id="@+id/settings_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:src="@drawable/baseline_settings_24"
@@ -67,14 +68,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/card_glow_blue"
-                android:padding="4dp"
-                android:layout_marginBottom="16dp"
+                android:padding="6dp"
+                android:layout_marginBottom="20dp"
                 android:gravity="center_vertical">
 
                 <Spinner
                     android:id="@+id/range_spinner"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="44dp"
                     android:background="@android:color/transparent"
                     android:dropDownSelector="?attr/appCardBackgroundColor"
                     android:popupBackground="?attr/appCardBackgroundColor"
@@ -87,41 +88,41 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/card_glow_blue"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="24dp"
+                android:padding="20dp"
+                android:layout_marginBottom="28dp"
                 android:clipChildren="false"
                 android:clipToPadding="false">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
                     <ImageView
                         android:id="@+id/chart_icon1"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:src="@drawable/baseline_apps_24"
                         app:tint="@color/neon_blue" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_toEndOf="@id/chart_icon1"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="10dp"
                         android:text="TOTAL REFUELLED"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="12sp" />
+                        android:textSize="14sp"
+                        android:letterSpacing="0.05" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
                         android:text="250\nLiters Total"
                         android:textColor="@color/neon_blue"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:gravity="end"
                         android:textStyle="bold"/>
                 </RelativeLayout>
 
-                <!-- RelativeLayout with extra top margin for tooltip -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="180dp"
@@ -148,28 +149,28 @@
                             android:layout_height="wrap_content"
                             android:background="@drawable/tooltip_bg"
                             android:orientation="vertical"
-                            android:padding="8dp"
-                            android:elevation="4dp">
+                            android:padding="10dp"
+                            android:elevation="6dp">
                             <TextView
                                 android:id="@+id/tooltip1_header"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="May 15"
                                 android:textColor="?attr/appSubTextColor"
-                                android:textSize="10sp" />
+                                android:textSize="12sp" />
                             <TextView
                                 android:id="@+id/tooltip1_value"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Refueled: 50.0 Ltrs"
                                 android:textColor="?attr/appContentTextColor"
-                                android:textSize="12sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <View
                             android:id="@+id/tooltip1_line"
-                            android:layout_width="1dp"
+                            android:layout_width="1.5dp"
                             android:layout_height="150dp"
                             android:background="@color/neon_blue"
                             android:alpha="0.3" />
@@ -183,41 +184,41 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/card_glow_orange"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:layout_marginBottom="24dp"
+                android:padding="20dp"
+                android:layout_marginBottom="28dp"
                 android:clipChildren="false"
                 android:clipToPadding="false">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="12dp">
                     <ImageView
                         android:id="@+id/chart_icon2"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:src="@drawable/baseline_apps_24"
                         app:tint="@color/neon_orange" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_toEndOf="@id/chart_icon2"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="10dp"
                         android:text="ENGINE CONSUMED"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="12sp" />
+                        android:textSize="14sp"
+                        android:letterSpacing="0.05" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
                         android:text="185\nLiters Total"
                         android:textColor="@color/neon_orange"
-                        android:textSize="12sp"
+                        android:textSize="14sp"
                         android:gravity="end"
                         android:textStyle="bold"/>
                 </RelativeLayout>
 
-                <!-- RelativeLayout with extra top margin for tooltip -->
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="180dp"
@@ -244,28 +245,28 @@
                             android:layout_height="wrap_content"
                             android:background="@drawable/tooltip_bg"
                             android:orientation="vertical"
-                            android:padding="8dp"
-                            android:elevation="4dp">
+                            android:padding="10dp"
+                            android:elevation="6dp">
                             <TextView
                                 android:id="@+id/tooltip2_header"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="May 15"
                                 android:textColor="?attr/appSubTextColor"
-                                android:textSize="10sp" />
+                                android:textSize="12sp" />
                             <TextView
                                 android:id="@+id/tooltip2_value"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Consumed: 4.2 Liters"
                                 android:textColor="?attr/appContentTextColor"
-                                android:textSize="12sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <View
                             android:id="@+id/tooltip2_line"
-                            android:layout_width="1dp"
+                            android:layout_width="1.5dp"
                             android:layout_height="150dp"
                             android:background="@color/neon_orange"
                             android:alpha="0.3" />
@@ -273,7 +274,7 @@
                 </RelativeLayout>
             </LinearLayout>
 
-            <!-- Hidden Views for Compatibility -->
+            <!-- Hidden Views -->
             <RadioGroup
                 android:id="@+id/radio_group"
                 android:layout_width="wrap_content"

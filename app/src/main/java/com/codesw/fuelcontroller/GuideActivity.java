@@ -265,7 +265,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
             case "refreshExistedSSID":
                 RefreshAnimation.showRefreshAnimation(refreshExistedSSIDBtn, this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiverForSelection, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(this, wifiScanReceiverForSelection, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
                 break;
             case "connectWiFi":
                 ForceConnectWiFi();
@@ -304,7 +304,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
             case "refreshSSID":
                 RefreshAnimation.showRefreshAnimation(refreshSSIDBtn, this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(this, wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
                 break;
             case "allDone":
                 finish();
@@ -566,7 +566,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
         connectWiFiBtn.setEnabled(false);
 
         //registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        registerReceiver(wifiStateChangedReceiver, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION));
+        ContextCompat.registerReceiver(this, wifiStateChangedReceiver, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
 
     }
 

@@ -26,8 +26,8 @@
 
                 <ImageView
                     android:id="@+id/fuel_icon"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_centerVertical="true"
                     android:src="@drawable/ic_home"
                     app:tint="@color/neon_blue" />
@@ -36,16 +36,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="10dp"
                     android:layout_toEndOf="@id/fuel_icon"
                     android:text="FUEL GUARD"
                     android:textColor="?attr/appHeaderTextColor"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:src="@drawable/baseline_settings_24"
@@ -62,8 +63,8 @@
 
                 <FrameLayout
                     android:id="@+id/logo_container"
-                    android:layout_width="250dp"
-                    android:layout_height="160dp">
+                    android:layout_width="280dp"
+                    android:layout_height="180dp">
 
                     <ImageView
                         android:id="@+id/car_logo"
@@ -89,8 +90,9 @@
                     android:layout_height="wrap_content"
                     android:text="● Engine: OFF  |  📍 Dhaka-Chittagong Highway"
                     android:textColor="?attr/appSubTextColor"
-                    android:textSize="12sp"
-                    android:layout_marginTop="8dp"/>
+                    android:textSize="14sp"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.02"/>
             </LinearLayout>
 
             <!-- Grid Cards -->
@@ -103,27 +105,28 @@
                 <!-- Total Refuelled -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="160dp"
+                    android:layout_marginEnd="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/card_glow_blue"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="12dp">
+                    android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@drawable/baseline_apps_24"
                         app:tint="@color/neon_blue" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:text="TOTAL REFUELLED"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="10sp" />
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
 
                     <TextView
                         android:id="@+id/total_input"
@@ -131,42 +134,43 @@
                         android:layout_height="wrap_content"
                         android:text="50.0 Ltrs"
                         android:textColor="?attr/appContentTextColor"
-                        android:textSize="20sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/textview2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Today at 10:30 AM"
+                        android:text="Today"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="10sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <!-- Engine Consumed -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="140dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_height="160dp"
+                    android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/card_glow_orange"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="12dp">
+                    android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
                         android:src="@drawable/baseline_apps_24"
                         app:tint="@color/neon_orange" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="10dp"
                         android:text="ENGINE CONSUMED"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="10sp" />
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
 
                     <TextView
                         android:id="@+id/total_consume"
@@ -174,7 +178,7 @@
                         android:layout_height="wrap_content"
                         android:text="32.5 Ltrs"
                         android:textColor="?attr/appContentTextColor"
-                        android:textSize="20sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -183,23 +187,23 @@
                         android:layout_height="wrap_content"
                         android:text="Today"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="10sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
 
             <!-- Current Tank Status -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:layout_marginTop="16dp"
+                android:layout_height="120dp"
+                android:layout_marginTop="20dp"
                 android:background="@drawable/card_glow_green"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <RelativeLayout
-                    android:layout_width="60dp"
-                    android:layout_height="60dp">
+                    android:layout_width="80dp"
+                    android:layout_height="80dp">
                     <me.itangqi.waveloadingview.WaveLoadingView
                         android:id="@+id/waveLoadingView"
                         android:layout_width="match_parent"
@@ -208,13 +212,14 @@
                         app:wlv_borderWidth="2dp"
                         app:wlv_shapeType="circle"
                         app:wlv_waveColor="@color/neon_green"
-                        app:wlv_waveAmplitude="40"/>
+                        app:wlv_waveAmplitude="40"
+                        app:wlv_titleCenterSize="20sp"/>
                 </RelativeLayout>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
+                    android:layout_marginStart="20dp"
                     android:orientation="vertical">
 
                     <TextView
@@ -222,7 +227,8 @@
                         android:layout_height="wrap_content"
                         android:text="CURRENT TANK STATUS"
                         android:textColor="?attr/appSubTextColor"
-                        android:textSize="10sp" />
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
 
                     <TextView
                         android:id="@+id/monthly_usage_total"
@@ -230,7 +236,7 @@
                         android:layout_height="wrap_content"
                         android:text="17.5 Ltrs"
                         android:textColor="@color/neon_green"
-                        android:textSize="28sp"
+                        android:textSize="36sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 

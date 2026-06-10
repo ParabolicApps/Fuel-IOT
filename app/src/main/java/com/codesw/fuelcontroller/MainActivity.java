@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -23,19 +24,23 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.preference.PreferenceManager;
 
 import com.codesw.fuelcontroller.fragments.DevicesFragment;
 import com.codesw.fuelcontroller.fragments.Frag1FragmentActivity;
 import com.codesw.fuelcontroller.fragments.Frag2FragmentActivity;
+import com.codesw.fuelcontroller.fragments.MapsFragment;
 import com.codesw.fuelcontroller.fragments.SettingsFragment;
 import com.codesw.fuelcontroller.receiver.UrlBroadcastReceiver;
 import com.codesw.fuelcontroller.service.Checker;
+import com.codesw.fuelcontroller.utils.FirebaseSyncManager;
 import com.codesw.fuelcontroller.utils.SQLiteHandler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -102,12 +107,16 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
                     fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new Frag2FragmentActivity(), "Analytics").addToBackStack(null).commit();
                     break;
                 case R.id.map:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new DevicesFragment(), "Map").addToBackStack(null).commit();
+                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new MapsFragment(), "Map").addToBackStack(null).commit();
+                    break;
+                case R.id.devices:
+                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new DevicesFragment(), "Devices").addToBackStack(null).commit();
                     break;
                 case R.id.settings:
                     fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new SettingsFragment()).addToBackStack(null).commit();
                     break;
             }
+            invalidateOptionsMenu();
             return true;
         });
         // Setup Broadcast and SQLite Handler
@@ -116,7 +125,15 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         filter = new IntentFilter();
         filter.addAction(Checker.URL_FILTER);
         db = new SQLiteHandler(getApplicationContext());
+        
+        // Start Firebase real-time sync if user is signed in
+        if (FirebaseSyncManager.isSignedIn()) {
+            FirebaseSyncManager.setupRealtimePull(db, com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid());
+        }
+
         initializeDemoData();
+
+        _changeActivityFont("ubuntu_medium");
 
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED) {
@@ -133,8 +150,27 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        //refreshItem = (MenuItem) menu.findItem(R.id.action_refresh);
+        
+        // Hide Export and Simulate in Real Mode
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean isRealMode = prefs.getBoolean("real_mode", false);
+        if (isRealMode) {
+            menu.findItem(R.id.export).setVisible(false);
+            menu.findItem(R.id.simulateData).setVisible(false);
+        }
+
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        boolean isDevicesScreen = mainBnv != null && mainBnv.getSelectedItemId() == R.id.devices;
+
+        menu.findItem(R.id.action_refresh).setVisible(isDevicesScreen);
+        menu.findItem(R.id.action_add_device).setVisible(isDevicesScreen);
+        menu.findItem(R.id.action_fix_device).setVisible(isDevicesScreen);
+
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -150,8 +186,10 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
             case R.id.action_refresh:
 
                 //item.setEnabled(false);
-                //TODO: Send Data test
-                sendDataFrag("35");
+                DevicesFragment devicesFragment = (DevicesFragment) getSupportFragmentManager().findFragmentByTag("Devices");
+                if (devicesFragment != null) {
+                    devicesFragment.refreshDevices();
+                }
                 return true;
             case R.id.action_add_device:
                 intent = new Intent(this, GuideActivity.class);
@@ -206,6 +244,27 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         dialog.show();*/
     }
 
+
+    public void handleModeSwitch(boolean isRealMode) {
+        if (isRealMode) {
+            // Real Mode ON: Clear demo data to prepare for live data
+            db.deleteLogs();
+            PreferenceManager.getDefaultSharedPreferences(this).edit()
+                    .putBoolean("demo_data_initialized", false)
+                    .apply();
+            Toast.makeText(this, "Switched to Real Mode. Data cleared.", Toast.LENGTH_SHORT).show();
+        } else {
+            // Real Mode OFF: Re-initialize demo data
+            initializeDemoData();
+            Toast.makeText(this, "Switched to Demo Mode. Data initialized.", Toast.LENGTH_SHORT).show();
+        }
+        
+        // Refresh fragment if it exists
+        Frag1FragmentActivity home = (Frag1FragmentActivity) getSupportFragmentManager().findFragmentByTag("Home");
+        if (home != null && home.isResumed()) {
+            home.onResume(); // Force refresh stats
+        }
+    }
 
     private void initializeDemoData() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -277,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(receiver, filter);
+        ContextCompat.registerReceiver(this, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     @Override
@@ -298,22 +357,40 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
     @Override
     public void urlReceived(String counter) {
         Log.d(TAG, "urlReceived: main: "+counter);
-        Log.d(TAG, "urlReceived: input: "+counter.split("/")[0]);
-        String inData = counter.split("/")[0];
-        String outData = counter.split("/")[1];
+        if (counter == null || !counter.contains("/")) {
+            sendDataFrag(counter);
+            return;
+        }
+
+        String[] telemetryParts = counter.split("/");
+        if (telemetryParts.length < 2) {
+            Log.w(TAG, "urlReceived: invalid telemetry packet: " + counter);
+            return;
+        }
+
+        Log.d(TAG, "urlReceived: input: "+telemetryParts[0]);
+        String inData = telemetryParts[0];
+        String outData = telemetryParts[1];
 
         // Send Data Activity to Fragment
-        sendDataFrag(inData);
-        Log.d(TAG, "urlReceived: output: "+counter.split("/")[1]);
+        sendDataFrag(inData, counter);
+        Log.d(TAG, "urlReceived: output: "+outData);
     }
     public void sendDataFrag(String data){
+        sendDataFrag(data, data);
+    }
+    public void sendDataFrag(String data, String homeData){
         Frag1FragmentActivity fragment1 = (Frag1FragmentActivity) getSupportFragmentManager().findFragmentByTag("Home");
         if (fragment1 != null){
-            fragment1.setProgress(data);
+            fragment1.setProgress(homeData);
         }
         Frag2FragmentActivity fragment2 = (Frag2FragmentActivity) getSupportFragmentManager().findFragmentByTag("Analytics");
         if (fragment2 != null){
             fragment2.setData(data);
+        }
+        MapsFragment fragment3 = (MapsFragment) getSupportFragmentManager().findFragmentByTag("Map");
+        if (fragment3 != null){
+            fragment3.setProgress(data);
         }
 
     }
@@ -368,6 +445,28 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         } catch (Exception e) {
             Log.e(TAG, "exportDB Error: ", e);
             Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void _changeActivityFont(final String fontName) {
+        String fontPath = "fonts/".concat(fontName.concat(".ttf"));
+        overrideFonts(this.findViewById(android.R.id.content), fontPath);
+    }
+
+    private void overrideFonts(final View v, String fontPath) {
+        try {
+            Typeface typeface = Typeface.createFromAsset(getAssets(), fontPath);
+            if (v instanceof android.view.ViewGroup) {
+                android.view.ViewGroup vg = (android.view.ViewGroup) v;
+                for (int i = 0; i < vg.getChildCount(); i++) {
+                    View child = vg.getChildAt(i);
+                    overrideFonts(child, fontPath);
+                }
+            } else if (v instanceof TextView) {
+                ((TextView) v).setTypeface(typeface);
+            }
+        } catch(Exception e) {
+            // Quiet fail
         }
     }
 }

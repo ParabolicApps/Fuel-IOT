@@ -22,6 +22,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import androidx.annotation.Nullable;
@@ -31,30 +32,32 @@ import android.util.Log;
 import android.content.ContentValues;
 
 import com.codesw.fuelcontroller.model.DbModel;
+import com.codesw.fuelcontroller.utils.FirebaseSyncManager;
 
 /**
- * SQLite Handler used to get Daily monthly Weekly logs
- * Set data from CheckerService
+ * SQLiteHandler manages the persistence layer for the Fuel Guard application.
+ * It provides high-performance methods for logging real-time telemetry, 
+ * aggregating historical usage, and generating time-series data for analytics.
+ *
+ * Tables:
+ * - log: Raw timestamped entries of every fuel level change (Refills and Consumption).
+ * - total: Daily aggregated totals used for performance-optimized charting.
  */
 public class SQLiteHandler extends SQLiteOpenHelper {
 
-    // Database file info
     private static final int DATABASE_VERSION = 1;
     private static final String DATABASE_NAME = "data.db";
     private static final String DB_PATH_SUFFIX = "/databases/";
 
-
-    // Log table name
     private static final String TABLE_LOG = "log";
     private static final String TABLE_TOTAL = "total";
 
-
-    // Log Table Columns names
     private static final String KEY_SR = "sr";
     private static final String KEY_TIME = "time";
     private static final String KEY_DATE = "date";
     private static final String KEY_DATA = "data";
     private static final String KEY_TYPE = "type";
+    
     private final Calendar calendar = Calendar.getInstance();
 
     static Context mCtx;
@@ -67,6 +70,9 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         mCtx = context;
     }
 
+    /**
+     * Singleton accessor for the database handler.
+     */
     public SQLiteOpenHelper getInstance(Context context) {
         if (dbInstance == null)
             dbInstance = new SQLiteHandler(context);
@@ -78,8 +84,10 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         return mCtx.getApplicationInfo().dataDir + DB_PATH_SUFFIX + DATABASE_NAME;
     }
 
-    // Creating Tables
-    // Create Two tables Total_In and Total_Out or Create additional Field in every row "type" = "in"/'out"
+    /**
+     * Initializes the database schema.
+     * Creates both raw log and aggregated total tables.
+     */
     @Override
     public void onCreate(SQLiteDatabase db) {
         String CREATE_LOG_TABLE = "CREATE TABLE " + TABLE_LOG + "("
@@ -96,15 +104,11 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * Get all data by condition,
-     * example: condition can be the "date" column
-     * and situation can be today date("12-05-23" format),
-     * which means, get all the log of today
-     * some other usage of this method IE: This Month and This Day
-     *
-     * @param condition
-     * @param situation
-     * @return
+     * Retrieves filtered logs based on a column condition.
+     * 
+     * @param condition The column name to filter by.
+     * @param situation The value to match.
+     * @return List of matching database models.
      */
     public ArrayList<DbModel> getLogData(String condition, String situation) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -112,8 +116,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery("SELECT * FROM log WHERE " + condition + " = " + situation, null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
-
-                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
+                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
                 modelList.add(count);
             }
             cursor.close();
@@ -123,9 +126,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * returns all the log data of the fuel changes
-     *
-     * @return
+     * Returns all historical fuel change logs.
      */
     public ArrayList<DbModel> getLogs() {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -133,8 +134,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery("SELECT * FROM log", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
-
-                DbModel count = new DbModel(cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
+                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
                 modelList.add(count);
             }
             cursor.close();
@@ -144,8 +144,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * SELECT * FROM log WHERE (time LIKE '%10:%')
-     * TODO: WIP and Next Release
+     * Searches for logs matching a specific partial time string.
      */
     public ArrayList<DbModel> getSessions(String time) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -153,7 +152,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery("SELECT * FROM log WHERE (time LIKE '%" + time + "%')", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
+                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
                 modelList.add(count);
             }
             cursor.close();
@@ -163,146 +162,125 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * Get all weekly inputs from total table
-     * Weekly Usage
+     * Aggregates fuel totals for the past 7 days for a specific data type.
+     * 
+     * @param type The data category ("in" for refills, "out" for consumption).
+     * @return A list of 7 daily totals in reverse chronological order.
      */
-    public ArrayList<Float> getWeekly() {
-        // initialize an arraylist as 0 and item is 7
+    public ArrayList<Float> getWeekly(String type) {
         ArrayList<Float> result = new ArrayList<>(Collections.nCopies(7, 0.0f));
-
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy");
-
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", Locale.getDefault());
         SQLiteDatabase db = this.getReadableDatabase();
-        // Get Weekly Data from The SQLite
+
         for (int i = 0; i < 7; i++) {
-
             String date = dateFormat.format(calendar.getTime());
-            Log.d(TAG, "getWeekly: " + date);
-            Cursor cursor = db.rawQuery("SELECT * FROM total WHERE (date = '" + date + "')", null);
+            Cursor cursor = db.rawQuery("SELECT data FROM total WHERE date = ? AND type = ?", new String[]{date, type});
             if (cursor != null) {
-                while (cursor.moveToNext()) {
-
-                    float amount = Float.valueOf(cursor.getString(2));
-                    result.set(i, amount);
-                    Log.d(TAG, "getWeekly: Amount " + amount);
+                if (cursor.moveToFirst()) {
+                    result.set(i, cursor.getFloat(0));
                 }
                 cursor.close();
-
             }
-            // With Today Date Also
             calendar.add(Calendar.DATE, -1);
         }
         db.close();
         return result;
-
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public ArrayList<HashMap<String, Object>> getDaily() {
-        // initialize an arraylist
-        ArrayList<HashMap<String, Object>> data = new ArrayList<>();
+    /**
+     * Default weekly refill accessor.
+     */
+    public ArrayList<Float> getWeekly() {
+        return getWeekly("in");
+    }
 
+    /**
+     * Processes hourly fuel usage for the current day.
+     * Performs interpolation to handle hours with missing data points.
+     * 
+     * @param type Data category ("in" or "out").
+     * @return List of maps containing "hour" and aggregated "value".
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public ArrayList<HashMap<String, Object>> getDaily(String type) {
+        ArrayList<HashMap<String, Object>> data = new ArrayList<>();
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", Locale.getDefault());
 
         SQLiteDatabase db = this.getReadableDatabase();
-        // Get Hourly Data from The SQLite
-
-
         String day = dateFormat.format(calendar.getTime());
-        Log.d(TAG, "getDaily: " + day);
-        Cursor cursor = db.rawQuery("SELECT * FROM log WHERE (date = '" + day + "')" + " AND type = " + "\"in\"", null);
+        
+        Cursor cursor = db.rawQuery("SELECT * FROM log WHERE date = ? AND type = ?", new String[]{day, type});
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 HashMap<String, Object> map = new HashMap<>();
                 map.put("time", cursor.getString(1));
                 map.put("date", cursor.getString(2));
                 map.put("data", cursor.getString(3));
-                Log.d(TAG, "getDaily: map: "+map);
                 data.add(map);
             }
             cursor.close();
-
         }
-        // With Today Date Also
-
         db.close();
+
 
         Map<Integer, List<Double>> hourlyData = new HashMap<>();
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a");
         for (Map<String, Object> item : data) {
             LocalTime time = LocalTime.parse(item.get("time").toString(), timeFormatter);
             int hour = time.getHour();
-            // Use Double.parseDouble instead of Integer.parseInt to handle decimals
             double dataValue = Double.parseDouble(item.get("data").toString());
             List<Double> dataList = hourlyData.get(hour);
             if (dataList == null) {
-                dataList = new ArrayList<Double>();
+                dataList = new ArrayList<>();
                 hourlyData.put(hour, dataList);
             }
             dataList.add(dataValue);
         }
 
         ArrayList<HashMap<String, Object>> result = new ArrayList<>();
-
         for (int hour = 0; hour < 24; hour++) {
             List<Double> dataValues = hourlyData.get(hour);
-            //System.out.println("HourlyData "+hourlyData);
-            //System.out.println("Hour "+hour);
 
             if (dataValues != null) {
-                //System.out.println("dataValues "+dataValues);
-
                 double firstValue = dataValues.get(0);
                 double lastValue = dataValues.get(dataValues.size() - 1);
 
-                //If only one logs in the hour
+                // Hour-to-hour interpolation logic
                 if (lastValue == firstValue) {
-
-                    //System.out.println("Critical 1 ");
-                    //Get Previous Hour TODO: if no previous hour?
-                    //also if previous hour (11 as previous of 12) don't have logs
-
-                    // This k must be 1 otherwise it will fall to
-                    //default(current problematic hour) instead of going to previous hour
                     int k = 1;
                     List<Double> lastDataValues = hourlyData.get(hour - 1);
-
                     while (lastDataValues == null && (hour - k) >= 0) {
-                        //System.out.println("Trying "+ (hour-k));
                         lastDataValues = hourlyData.get(hour - k);
                         k++;
                     }
-                    
                     if (lastDataValues != null) {
-                        //Getting last value of previous hour
                         firstValue = lastDataValues.get(lastDataValues.size() - 1);
                     }
                 }
-                //System.out.println("last "+lastValue+", first "+ firstValue);
+                
                 double diff = lastValue - firstValue;
                 HashMap<String, Object> mapdata = new HashMap<>();
                 mapdata.put("hour", hour);
                 mapdata.put("value", diff);
-                Log.d(TAG, "getDaily: mapdata:"+mapdata);
-
                 result.add(mapdata);
-                //System.out.printf("%02d:00 - %02d:59: %d\n", hour, hour, diff);
             }
         }
-
-
-
         return result;
+    }
 
+    /**
+     * Default daily refill accessor.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public ArrayList<HashMap<String, Object>> getDaily() {
+        return getDaily("in");
     }
 
 
     /**
-     * SELECT * FROM log WHERE (date LIKE '%05-23%')
-     * returns All data as A Collection of in and Out
-     * Might be used for Graphs
+     * Retrieves all logs for a specific month.
      */
     public ArrayList<DbModel> getMonthly(String month) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -310,84 +288,92 @@ public class SQLiteHandler extends SQLiteOpenHelper {
         Cursor cursor = db.rawQuery("SELECT * FROM log WHERE (date LIKE '%" + month + "-23" + "%')", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3));
+                DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
                 modelList.add(count);
             }
             cursor.close();
             db.close();
         }
-
-
         return modelList;
-
     }
 
     /**
-     * Returns a String of Total Monthly Usage
-     *
-     * @param month
-     * @return
+     * Returns all aggregated daily totals.
      */
-    public String getMonthlyTotal(String month) {
+    public ArrayList<DbModel> getTotals() {
         SQLiteDatabase db = this.getReadableDatabase();
-        String total;
-        // if doesn't Exist Then Return 0
-        double count = 0;
-        Cursor cursor = db.rawQuery("SELECT * FROM total WHERE (date LIKE '%" + month + "-23" + "%')", null);
+        ArrayList<DbModel> modelList = new ArrayList<>();
+        Cursor cursor = db.rawQuery("SELECT * FROM total", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
-                Log.d(TAG, "getMonthlyTotal: "+count+" + "+Double.parseDouble(cursor.getString(2)));
-                count = count + Double.parseDouble(cursor.getString(2));
-
+                DbModel count = new DbModel(cursor.getString(0), "", cursor.getString(1), cursor.getString(2), cursor.getString(3));
+                modelList.add(count);
             }
             cursor.close();
             db.close();
         }
-
-
-        return String.valueOf(count);
-
+        return modelList;
     }
 
     /**
-     * Storing logs in database
-     * we will not differentiate the inputs, Instead here we will add Directly logs
+     * Calculates the sum total of fuel activity for a specific month.
+     */
+    public String getMonthlyTotal(String month) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        double count = 0;
+        Cursor cursor = db.rawQuery("SELECT * FROM total WHERE (date LIKE '%" + month + "-23" + "%')", null);
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                count = count + Double.parseDouble(cursor.getString(2));
+            }
+            cursor.close();
+            db.close();
+        }
+        return String.valueOf(count);
+    }
+
+    /**
+     * Inserts a new telemetry log and updates the aggregated daily total.
+     * 
+     * @param time Timestamp of the event.
+     * @param date Date of the event.
+     * @param data Raw fuel level string.
+     * @param type Category ("in" or "out").
      */
     public void addLogs(String time, String date, String data, String type) {
         Log.d(TAG, "Add Log Attempt: Date=" + date + " Type=" + type);
 
         ContentValues values = new ContentValues();
-        values.put(KEY_TIME, time); // Time
-        values.put(KEY_DATE, date); // Date
-        values.put(KEY_DATA, data); // Data
-        values.put(KEY_TYPE, type); // Type
+        values.put(KEY_TIME, time); 
+        values.put(KEY_DATE, date); 
+        values.put(KEY_DATA, data); 
+        values.put(KEY_TYPE, type); 
 
-        // Correctly check if row exists for the SPECIFIED Date and Type in the total table
+        // Update daily total based on delta from last known value
         if (isTotalRowExist(date, type)) {
-            Log.d(TAG, "addLogs: Row Exist for date: " + date);
-            // Calculate increment based on last entry
             double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
             double currentVal = Double.parseDouble(data);
             updateLogsTotal(date, String.valueOf(currentVal - lastVal), type);
         } else {
-            Log.d(TAG, "addLogs: Row Doesn't Exist for date: " + date);
             double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
             double currentVal = Double.parseDouble(data);
             addLogsTotal(date, String.valueOf(currentVal - lastVal), type);
         }
 
-        // Inserting Row to all Logs Table
         SQLiteDatabase db = this.getWritableDatabase();
-        long id = db.insert(TABLE_LOG, null, values);
+        long rowId = db.insert(TABLE_LOG, null, values);
         db.close();
 
-        Log.d(TAG, "New logs inserted into sqlite: " + id);
+        if (rowId >= 0) {
+            FirebaseSyncManager.syncLog(String.valueOf(rowId), time, date, data, type);
+        }
+        FirebaseSyncManager.syncTotal(date, type, getLogsTotal(date, type));
     }
 
     /**
-     * Helper to check if a row exists in TABLE_TOTAL for specific date and type
+     * Verifies if an aggregated row already exists for a specific day and type.
      */
-    private boolean isTotalRowExist(String date, String type) {
+    public boolean isTotalRowExist(String date, String type) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM total WHERE date = ? AND type = ?", new String[]{date, type});
         boolean exists = cursor != null && cursor.moveToFirst();
@@ -396,165 +382,113 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * @param date
-     * @param data
-     * @param type
+     * Creates a new aggregated daily entry.
      */
     public void addLogsTotal(String date, String data, String type) {
         SQLiteDatabase db = this.getWritableDatabase();
-        //
         ContentValues totalValues = new ContentValues();
-        totalValues.put(KEY_DATE, date); // Date
-        totalValues.put(KEY_DATA, data); // Data
-        totalValues.put(KEY_TYPE, type); // Type
-
+        totalValues.put(KEY_DATE, date);
+        totalValues.put(KEY_DATA, data); 
+        totalValues.put(KEY_TYPE, type); 
         db.insert(TABLE_TOTAL, null, totalValues);
-        //db.close();
     }
 
     /**
-     * If already total log of the day is exist then just update changed value
-     * @param date
-     * @param data
-     * @param type
+     * Updates an existing aggregated entry with a new delta.
      */
     public void updateLogsTotal(String date, String data, String type) {
         Calendar c = Calendar.getInstance();
         SQLiteDatabase db = this.getWritableDatabase();
-        // Updated values
         ContentValues totalValues = new ContentValues();
-        totalValues.put(KEY_DATE, date); // Date
-        Log.d(TAG, "updateLogsTotal: Total: " + getLogsTotal(new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), type)+ " Add: "+data+ " Type: "+type+ " Date: " +date);
-        totalValues.put(KEY_DATA, Double.parseDouble(data) + getLogsTotal(new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), type)); // Data
-        totalValues.put(KEY_TYPE, type); // Type
+        totalValues.put(KEY_DATE, date);
+        double currentTotal = getLogsTotal(new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(c.getTimeInMillis()), type);
+        totalValues.put(KEY_DATA, Double.parseDouble(data) + currentTotal); 
+        totalValues.put(KEY_TYPE, type); 
 
-        // Update data Where Date and type Matching
         String selection = KEY_DATE + " = ? AND " + KEY_TYPE + " = ?";
         String[] selectionArgs = {date, type};
-
         db.update(TABLE_TOTAL, totalValues, selection, selectionArgs);
-        //db.close();
     }
 
     /**
-     * TODO: Returning 0 even if the data exist
-     *
-     * @param date
-     * @param type
-     * @return
+     * Retrieves the specific aggregated total for a date and type.
      */
     public double getLogsTotal(String date, String type) {
         double count = 0;
         SQLiteDatabase db = this.getReadableDatabase();
-        //"SELECT * FROM total WHERE date = " + date + " AND type = " + "\""+type+"\""
-        //"SELECT data FROM total WHERE date = " + date + " AND type = '" + type + "'"
-        //"SELECT data FROM total WHERE date = " + date + " AND type = " + type
-        //"SELECT data FROM total WHERE date = " + date + " AND type = '\""+type+"\"'"
-        //"SELECT data FROM total WHERE date = " + date + " AND type = " + "in"
-
         String[] selectionArgs = {date, type};
         Cursor cursor = db.rawQuery("SELECT data FROM total WHERE date = ? AND type = ?", selectionArgs);
         if (cursor != null) {
             if (cursor.moveToFirst()) {
-                Log.d(TAG, "getLogsTotal: Cursor Data Exist, Size " + cursor.getCount() + " Column: " + cursor.getColumnCount());
                 count = Double.parseDouble(cursor.getString(0));
-                Log.d(TAG, "getLogsTotal: Count " + count);
             }
             cursor.close();
         }
-        Log.d(TAG, "getLogsTotal: " + count + " Date: " + date + " Type: " + type);
         return count;
     }
 
     /**
-     * @param tableName
-     * @param columnName
-     * @param columnValue
-     * @return
+     * Check if a specific row exists in a table.
      */
     public boolean isRowExist(String tableName, String columnName, String columnValue) {
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + tableName + " WHERE " + columnName + " = ?";
-
         Cursor cursor = db.rawQuery(query, new String[]{columnValue});
-        boolean rowExists;
-        rowExists = cursor.moveToFirst();
-        cursor.close();
-        //db.close();
+        boolean rowExists = cursor != null && cursor.moveToFirst();
+        if (cursor != null) cursor.close();
         return rowExists;
     }
 
     /**
-     * Get last input value based on serial
-     *
-     * @param
-     * @return
+     * Retrieves the most recent fuel refill level from history.
      */
     public double getLastInput() {
-
         double count = 0;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT data FROM log WHERE type = \"in\" ORDER BY sr DESC LIMIT 1", null);
         if (cursor != null) {
-            while (cursor.moveToNext()) {
+            if (cursor.moveToFirst()) {
                 count = Double.parseDouble(cursor.getString(0));
-                Log.d(TAG, "getLastInput: " + count);
             }
             cursor.close();
-            db.close();
         }
         return count;
     }
 
     /**
-     * @return
+     * Retrieves the most recent fuel consumption level from history.
      */
     public double getLastOutput() {
         double count = 0;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT data FROM log WHERE type = \"out\" ORDER BY sr DESC LIMIT 1", null);
         if (cursor != null) {
-            while (cursor.moveToNext()) {
+            if (cursor.moveToFirst()) {
                 count = Double.parseDouble(cursor.getString(0));
-                Log.d(TAG, "getLastOutput: " + count);
             }
             cursor.close();
-            db.close();
         }
-
         return count;
     }
 
-
     /**
-     * simple and Easier Access, I'll keep for later
-     *
-     * @param
-     * @return
+     * Convenience method to get total consumption for today.
      */
     public double getTodayTotalUsage() {
-        if (isRowExist("total", "date", new SimpleDateFormat("dd-MM-yy").format(calendar.getTimeInMillis())) && isRowExist("total", "type", "\"out\"")) {
-            Log.d(TAG, "getTodayTotalUsage: " + "Daily Exist");
-            return getLogsTotal(new SimpleDateFormat("dd-MM-yy").format(calendar.getTimeInMillis()), "\"out\"");
-        } else {
-            Log.d(TAG, "getTodayTotalUsage: " + "Daily not Exist");
-            return 0;
-        }
-
-    }
-
-    public double getTodayTotalInput() {
-        if (isRowExist("total", "date", new SimpleDateFormat("dd-MM-yy").format(calendar.getTimeInMillis())) && isRowExist("total", "type", "\"in\"")) {
-            Log.d(TAG, "getTodayTotalInput: " + " Daily Exist");
-            return getLogsTotal(new SimpleDateFormat("dd-MM-yy").format(calendar.getTimeInMillis()), "\"in\"");
-        } else {
-            Log.d(TAG, "getTodayTotalInput: " + " Daily Doesn't Exist");
-            return 0;
-        }
+        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(calendar.getTimeInMillis());
+        return getLogsTotal(day, "out");
     }
 
     /**
-     * Set Data Based on SQL Query
+     * Convenience method to get total refill volume for today.
+     */
+    public double getTodayTotalInput() {
+        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(calendar.getTimeInMillis());
+        return getLogsTotal(day, "in");
+    }
+
+    /**
+     * Executes a raw SQL query safely.
      */
     public void setData(String sqlQuery) {
         SQLiteDatabase db = this.getReadableDatabase();
@@ -566,64 +500,51 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
-     * Re-create database Delete all tables and create them again
+     * Purges all historical logs.
      */
     public void deleteLogs() {
         SQLiteDatabase db = this.getWritableDatabase();
-        // Delete All Rows
         db.delete(TABLE_LOG, null, null);
+        db.delete(TABLE_TOTAL, null, null);
         db.close();
-
-        Log.d(TAG, "Deleted all user info from sqlite");
+        Log.d(TAG, "Database purged.");
     }
 
     /**
-     * Get The SQL Data instantly from Assets
-     *
-     * @throws IOException
+     * Standard database upgrade procedure.
      */
-    public void CopyDatabaseFromAssets() throws IOException {
-        InputStream myInput = mCtx.getAssets().open(DATABASE_NAME);
-        String outFileName = getDatabasePath();
-        File file = new File(mCtx.getApplicationInfo().dataDir + DB_PATH_SUFFIX);
-        if (!file.exists())
-            file.mkdir();
-        OutputStream myOutput = new FileOutputStream(outFileName);
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = myInput.read(buffer)) > 0)
-            myOutput.write(buffer, 0, length);
-        myOutput.flush();
-        myOutput.close();
-        myInput.close();
-    }
-
-    /**
-     * Not Used anymore, or didn't implemented well.
-     *
-     * @return
-     * @throws SQLException
-     */
-    public SQLiteDatabase openDatabase() throws SQLException {
-        File dbFile = mCtx.getDatabasePath(DATABASE_NAME);
-        if (!dbFile.exists()) {
-            try {
-                CopyDatabaseFromAssets();
-                Toast.makeText(mCtx, "Copying success from assets to folder", Toast.LENGTH_SHORT);
-            } catch (IOException e) {
-                throw new RuntimeException("Error Creating database", e);
-            }
-        }
-        return SQLiteDatabase.openDatabase(dbFile.getPath(), null, SQLiteDatabase.NO_LOCALIZED_COLLATORS | SQLiteDatabase.CREATE_IF_NECESSARY);
-    }
-
-
     @Override
     public void onUpgrade(SQLiteDatabase db, int i, int i1) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_LOG);
-
-        // Create tables again
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_TOTAL);
         onCreate(db);
     }
-}
 
+    /**
+     * Directly inserts a log entry from a remote source (Deduplicated via sr check).
+     */
+    public void importLog(String sr, String time, String date, String data, String type) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_SR, sr);
+        values.put(KEY_TIME, time);
+        values.put(KEY_DATE, date);
+        values.put(KEY_DATA, data);
+        values.put(KEY_TYPE, type);
+        db.insert(TABLE_LOG, null, values);
+        db.close();
+    }
+
+    /**
+     * Directly inserts a total entry from a remote source (Deduplicated via date+type check).
+     */
+    public void importTotal(String date, String data, String type) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_DATE, date);
+        values.put(KEY_DATA, data);
+        values.put(KEY_TYPE, type);
+        db.insert(TABLE_TOTAL, null, values);
+        db.close();
+    }
+}

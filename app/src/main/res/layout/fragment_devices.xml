@@ -1,105 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/swipeRefreshLayout"
     android:background="?attr/appBackgroundColor"
-    android:orientation="vertical">
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.codesw.fuelcontroller.MainActivity">
 
-    <!-- Top Header (Same as others for consistency) -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp">
-
-        <ImageView
-            android:id="@+id/fuel_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_centerVertical="true"
-            android:src="@drawable/ic_map"
-            app:tint="@color/neon_blue" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="8dp"
-            android:layout_toEndOf="@id/fuel_icon"
-            android:text="FUEL GUARD | MAP"
-            android:textColor="?attr/appHeaderTextColor"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:src="@drawable/baseline_settings_24"
-            app:tint="?attr/appIconTint" />
-    </RelativeLayout>
-
-    <androidx.cardview.widget.CardView
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="?attr/appCardBackgroundColor"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp">
+        android:layout_alignParentStart="true">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <!-- Placeholder for Map -->
-            <ImageView
-                android:id="@+id/map_placeholder"
+            <!-- Top Header -->
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/baseline_apps_24"
-                android:alpha="0.2"
-                app:tint="?attr/appIconTint" />
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Map View Placeholder\n(Dhaka-Chittagong Highway)"
-                android:textColor="@color/neon_blue"
-                android:gravity="center"
-                android:textSize="16sp" />
+                android:layout_marginBottom="16dp">
 
-            <!-- Floating Card on Map -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_centerHorizontal="true"
-                android:layout_marginBottom="32dp"
-                android:background="@drawable/card_glow_blue"
-                android:orientation="vertical"
-                android:padding="12dp">
+                <ImageView
+                    android:id="@+id/fuel_icon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/baseline_apps_24"
+                    app:tint="@color/neon_blue" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Current Location"
-                    android:textColor="?attr/appSubTextColor"
-                    android:textSize="10sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Highway Station 42"
-                    android:textColor="?attr/appContentTextColor"
-                    android:textSize="14sp"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
+                    android:layout_toEndOf="@id/fuel_icon"
+                    android:letterSpacing="0.05"
+                    android:text="FUEL GUARD"
+                    android:textColor="?attr/appHeaderTextColor"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/settings_icon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:src="@drawable/baseline_settings_24"
+                    app:tint="?attr/appIconTint" />
+            </RelativeLayout>
+
+            <LinearLayout
+                android:id="@+id/devicesList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
             </LinearLayout>
 
-        </RelativeLayout>
-    </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
 
-</LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

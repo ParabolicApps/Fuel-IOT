@@ -120,7 +120,7 @@ public class ConfigureDeviceActivity extends AppCompatActivity {
             public void onClick(View v) {
                 RefreshAnimation.showRefreshAnimation(refreshSSIDBtn, ConfigureDeviceActivity.this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(ConfigureDeviceActivity.this, wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
             }
         });
 

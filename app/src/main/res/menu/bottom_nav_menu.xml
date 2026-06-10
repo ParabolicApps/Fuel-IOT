@@ -23,6 +23,13 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/devices"
+        android:contentDescription="Devices"
+        android:icon="@drawable/baseline_apps_24"
+        android:title="Devices"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/settings"
         android:contentDescription="Settings"
         android:icon="@drawable/baseline_settings_24"

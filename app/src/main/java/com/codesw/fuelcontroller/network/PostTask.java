@@ -11,14 +11,30 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 /**
- *
- * Post task, return an input stream
- * This uses HTTP instead of TCP or UTP
+ * PostTask manages asynchronous HTTP POST requests to the IOT hardware.
+ * It is used for low-level device communication and control.
+ * 
+ * Note: This implementation uses standard HTTP instead of raw TCP/UDP 
+ * to ensure compatibility with basic web-server enabled microcontrollers.
  */
-
 public class PostTask extends AsyncTask<Object, Object, String> {
+
+    /**
+     * The destination URL or IP address of the IOT device.
+     */
     public String deviceAddress;
+
+    /**
+     * The raw text or parameters to be sent in the POST body.
+     */
     public String devicePostText;
+
+    /**
+     * Executes the POST request in a background thread.
+     * 
+     * @param params Unused objects for this implementation.
+     * @return The first line of the response from the device, or an empty string on failure.
+     */
     @Override
     protected String doInBackground(Object... params) {
         try {
@@ -30,22 +46,20 @@ public class PostTask extends AsyncTask<Object, Object, String> {
             } catch (Exception e) {
                 return "";
             }
-            httpURLConnection.setRequestMethod("HEAD");
-            httpURLConnection.setConnectTimeout(5000); //set timeout to 5 seconds
-
-
-            String urlParameters = devicePostText;
+            
             httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setConnectTimeout(5000); // 5 second connection timeout
             httpURLConnection.setRequestProperty("USER-AGENT", "Mozilla/5.0");
             httpURLConnection.setRequestProperty("ACCEPT-LANGUAGE", "en-US, en; 0.5");
 
+            // Write POST parameters to the output stream
             httpURLConnection.setDoOutput(true);
             DataOutputStream dataOutputStream = new DataOutputStream(httpURLConnection.getOutputStream());
-
-            dataOutputStream.writeBytes(urlParameters);
+            dataOutputStream.writeBytes(devicePostText);
             dataOutputStream.flush();
             dataOutputStream.close();
 
+            // Read the server response
             InputStream inputStream = httpURLConnection.getInputStream();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             return bufferedReader.readLine();
