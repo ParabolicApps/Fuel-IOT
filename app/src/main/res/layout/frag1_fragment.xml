@@ -89,9 +89,9 @@
                     android:id="@+id/status_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="● Engine: OFF  |  📍 Dhaka-Chittagong Highway"
+                    android:text=""
                     android:textColor="?attr/appSubTextColor"
-                    android:textSize="14sp"
+                    android:textSize="20sp"
                     android:layout_marginTop="12dp"
                     android:letterSpacing="0.02"
                     android:clickable="true"
@@ -110,7 +110,7 @@
                 <!-- Total Refuelled -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/card_glow_blue"
@@ -119,9 +119,10 @@
                     android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:src="@drawable/baseline_apps_24"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/refu_00003"
                         app:tint="@color/neon_blue" />
 
                     <TextView
@@ -154,7 +155,7 @@
                 <!-- Engine Consumed -->
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="160dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/card_glow_orange"
@@ -163,9 +164,9 @@
                     android:padding="16dp">
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:src="@drawable/baseline_apps_24"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:src="@drawable/cons_00008"
                         app:tint="@color/neon_orange" />
 
                     <TextView

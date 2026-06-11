@@ -360,7 +360,8 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 */
 	private void resetStatusText() {
 		if (statusText == null || isRefilling) return;
-		statusText.setText("● Engine: ON  |  📍 Dhaka-Chittagong Highway");
+		statusText.setText("");
+
 		statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_green));
 	}
 
