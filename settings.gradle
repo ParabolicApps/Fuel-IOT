@@ -17,6 +17,6 @@ dependencyResolutionManagement {
         maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
-rootProject.name = "IOT-Controller"
+rootProject.name = "Fuel-Guard"
 include ':app'
 include ':library'

@@ -425,6 +425,22 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
+     * Calculates the aggregated sum for the last 30 days for a specific type.
+     */
+    public double get30DaysTotal(String type) {
+        double total = 0;
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy", Locale.getDefault());
+
+        for (int i = 0; i < 30; i++) {
+            String date = dateFormat.format(calendar.getTime());
+            total += getLogsTotal(date, type);
+            calendar.add(Calendar.DATE, -1);
+        }
+        return total;
+    }
+
+    /**
      * Retrieves the specific aggregated total for a date and type.
      */
     public double getLogsTotal(String date, String type) {

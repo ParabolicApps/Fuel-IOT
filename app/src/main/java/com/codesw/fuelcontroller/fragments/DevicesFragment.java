@@ -58,7 +58,7 @@ public class DevicesFragment extends Fragment {
         device.setId(100);
         device.id = 100;
         device.ipAddr = "192.168.4.1";
-        device.setText("RidwansIOT");
+        device.setText("FuelIOT");
         //device.setPadding(0,16,0,16);
         device.setDeviceEnabled(true);
         device.setIpAddrText("192.168.4.1");

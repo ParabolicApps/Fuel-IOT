@@ -2,7 +2,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:background="?attr/appBackgroundColor">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -23,7 +24,7 @@
                 android:layout_marginBottom="@dimen/image_bottom_margin"
                 android:layout_marginTop="@dimen/image_top_margin"
                 android:scaleType="centerCrop"
-				app:tint="#6750A4"
+				app:tint="?attr/colorPrimary"
                 android:src="@drawable/pic_guidepage_wifi" />
 
             <com.google.android.material.textview.MaterialTextView
@@ -32,13 +33,14 @@
                 android:layout_marginBottom="@dimen/textView_bottom_margin"
                 android:gravity="center"
                 android:text="@string/guide_connect_wifi"
-                android:textColor="@android:color/black"
+                android:textColor="?attr/appContentTextColor"
                 android:textSize="@dimen/font_size_large" />
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="20dp" >
+                android:layout_margin="20dp"
+                app:cardBackgroundColor="?attr/appCardBackgroundColor">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
@@ -59,6 +61,7 @@
                             android:layout_alignParentBottom="true"
                             android:layout_centerInParent="true"
                             android:layout_marginBottom="@dimen/textView_scan_bottom_margin"
+                            android:textColor="?attr/appContentTextColor"
                             android:textSize="@dimen/font_size_medium" />
 
                         <com.google.android.material.textview.MaterialTextView
@@ -66,6 +69,7 @@
                             android:layout_height="wrap_content"
                             android:layout_alignParentBottom="true"
                             android:text="@string/notice_connect_wifi"
+                            android:textColor="?attr/appSubTextColor"
                             android:textSize="@dimen/font_size_small" />
                     </androidx.appcompat.widget.LinearLayoutCompat>
 

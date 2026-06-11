@@ -37,6 +37,7 @@ float inputTotalLitres = 0.0;
 float outputTotalLitres = 0.0;
 
 unsigned long oldTime = 0;
+unsigned long lcdUpdateTime = 0; // Added for non-blocking LCD updates
 
 // ---------------- Device Info ----------------
 String deviceIP;
@@ -67,7 +68,6 @@ void handleRoot() {
 // METHOD 2: TELEMETRY API (/data)
 // =====================================================
 void handleData() {
-  // App expects format: "inputData/outputData"
   String data =
     String(inputTotalLitres, 2) + "/" +
     String(outputTotalLitres, 2);
@@ -93,11 +93,8 @@ void handleData2() {
 // METHOD 4: DISCOVERY API (/getDevice)
 // =====================================================
 void handleGetDevice() {
-  // The Android app expects: Name + \0 + Status + \n
-  // PostTask reads one line with readLine()
-
   String response = deviceName;
-  response += (char)0; // Add null delimiter
+  response += (char)0; 
   response += deviceStatus;
   response += '\n';
 
@@ -112,18 +109,18 @@ void handleConfigure() {
     deviceName = server.arg("title");
   }
 
-  String response = deviceName; // App expects the new title back
+  String response = deviceName; 
 
   if (server.hasArg("ssid") && server.hasArg("psk")) {
     String newSSID = server.arg("ssid");
     String newPSK = server.arg("psk");
     Serial.printf("New Config: SSID=%s, PSK=%s, Title=%s\n", newSSID.c_str(), newPSK.c_str(), deviceName.c_str());
 
-    // In a real scenario, you'd save to EEPROM/LittleFS and reboot to station mode
     lcd.clear();
+    lcd.setCursor(0, 0);
     lcd.print("Config Updated");
     lcd.setCursor(0, 1);
-    lcd.print(newSSID);
+    lcd.print(newSSID.substring(0, 20)); // Keep inside 20-char boundary
   }
 
   server.send(200, "text/plain", response);
@@ -140,13 +137,13 @@ void setup() {
   lcd.init();
   lcd.backlight();
 
-  if (TEST_MODE) {
-    Serial.println("\nConnecting to WiFi...");
-    lcd.setCursor(0, 0);
-    lcd.print("WiFi Connecting");
-    lcd.setCursor(0, 1);
-    lcd.print(ROUTER_SSID);
+  // Show a clean initial boot screen
+  lcd.setCursor(0, 0);
+  lcd.print("  SYSTEM BOOTING  ");
+  lcd.setCursor(0, 1);
+  lcd.print("Connecting WiFi...");
 
+  if (TEST_MODE) {
     WiFi.begin(ROUTER_SSID, ROUTER_PASS);
     int retry = 0;
     while (WiFi.status() != WL_CONNECTED && retry < 20) {
@@ -176,13 +173,6 @@ void setup() {
   Serial.println("========================");
 
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Fuel Monitor");
-  lcd.setCursor(0, 1);
-  lcd.print(TEST_MODE ? "STA: " : "AP: ");
-  lcd.print(deviceIP);
-  delay(2000);
-  lcd.clear();
 
   // Web routes
   server.on("/", handleRoot);
@@ -200,6 +190,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(outputPin), outputFlowInterrupt, RISING);
 
   oldTime = millis();
+  lcdUpdateTime = millis();
 }
 
 // =====================================================
@@ -207,18 +198,15 @@ void setup() {
 // =====================================================
 void loop() {
 
+  // Flow calculation logic (Runs every 1 second)
   if (millis() - oldTime > 1000) {
-
     detachInterrupt(digitalPinToInterrupt(inputPin));
     detachInterrupt(digitalPinToInterrupt(outputPin));
 
     unsigned long dt = millis() - oldTime;
 
-    inputFlowLPM =
-      ((1000.0 / dt) * inputFlowCount) / 6.5;
-
-    outputFlowLPM =
-      ((1000.0 / dt) * outputFlowCount) / 6.5;
+    inputFlowLPM = ((1000.0 / dt) * inputFlowCount) / 6.5;
+    outputFlowLPM = ((1000.0 / dt) * outputFlowCount) / 6.5;
 
     oldTime = millis();
 
@@ -231,7 +219,7 @@ void loop() {
     attachInterrupt(digitalPinToInterrupt(inputPin), inputFlowInterrupt, RISING);
     attachInterrupt(digitalPinToInterrupt(outputPin), outputFlowInterrupt, RISING);
 
-    // ================= SERIAL MONITOR =================
+    // SERIAL MONITOR
     Serial.printf(
       "\n[Fuel IoT]\n"
       "IP: %s\n"
@@ -240,36 +228,37 @@ void loop() {
       "IN Flow   : %.2f L/min\n"
       "OUT Flow  : %.2f L/min\n"
       "------------------------\n",
-      deviceIP.c_str(),
-      inputTotalLitres,
-      outputTotalLitres,
-      inputFlowLPM,
-      outputFlowLPM
+      deviceIP.c_str(), inputTotalLitres, outputTotalLitres, inputFlowLPM, outputFlowLPM
     );
   }
 
   server.handleClient();
 
-  // ================= LCD DISPLAY =================
-  lcd.setCursor(0, 0);
-  lcd.print("IN : ");
-  lcd.print(inputTotalLitres, 2);
-  lcd.print(" L     ");
+  // ================= LCD DISPLAY UPDATES (Every 500ms, Non-Blocking) =================
+  if (millis() - lcdUpdateTime > 500) {
+    lcdUpdateTime = millis();
 
-  lcd.setCursor(0, 1);
-  lcd.print("OUT: ");
-  lcd.print(outputTotalLitres, 2);
-  lcd.print(" L     ");
+    char buffer[21]; // Buffer to format a perfect 20-character line
 
-  lcd.setCursor(0, 2);
-  lcd.print("IN LPM : ");
-  lcd.print(inputFlowLPM, 2);
-  lcd.print("     ");
+    // Row 0: App Header & Short IP status
+    lcd.setCursor(0, 0);
+    lcd.print("--- FUEL GUARD ---  "); 
 
-  lcd.setCursor(0, 3);
-  lcd.print("OUT LPM: ");
-  lcd.print(outputFlowLPM, 2);
-  lcd.print("     ");
+    // Row 1: REFUEL (Input Total)
+    lcd.setCursor(0, 1);
+    snprintf(buffer, sizeof(buffer), "REFUEL: %7.2f L   ", inputTotalLitres);
+    lcd.print(buffer);
 
-  delay(200);
+    // Row 2: CONSUMPTION (Output Total)
+    lcd.setCursor(0, 2);
+    snprintf(buffer, sizeof(buffer), "CONS. : %7.2f L   ", outputTotalLitres);
+    lcd.print(buffer);
+
+    // Row 3: Current IP address info
+    lcd.setCursor(0, 3);
+    snprintf(buffer, sizeof(buffer), "IP:%-17s", deviceIP.c_str());
+    lcd.print(buffer);
+  }
+
+  // Removed delay(200) to keep the web server highly responsive.
 }

@@ -3,6 +3,7 @@ package com.codesw.fuelcontroller.fragments;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.annotation.*;
 import android.app.*;
+import android.media.metrics.LogSessionId;
 import android.os.*;
 import android.view.*;
 import android.view.View.*;
@@ -166,8 +167,8 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		double lastOut = db.getLastOutput();
 		updateFuelDisplay(lastIn - lastOut);
 
-		textview1.setText("Today");
-		textview2.setText("Today");
+		textview1.setText("Last 30 Days");
+		textview2.setText("Last 30 Days");
 
 		// Toggle Neon Glow effects on card backgrounds
 		if (neonMode) {
@@ -182,7 +183,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	}
 
 	/**
-	 * Refreshes the "Today" and "Monthly" totals from the database.
+	 * Refreshes the 30-day historical totals from the database.
 	 */
 	private void updateTodayTotals() {
 		if (prefs == null || db == null || !isAdded() || getView() == null) return;
@@ -191,11 +192,11 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			String unit = prefs.getString("measurement_unit", "L");
 			String suffix = "L".equals(unit) ? " Ltrs" : " Gal";
 
-			double todayInput = db.getTodayTotalInput();
-			double todayConsume = db.getTodayTotalUsage();
+			double input30Days = db.get30DaysTotal("in");
+			double consume30Days = db.get30DaysTotal("out");
 
-			total_input.setText(formatFuelValue(todayInput, suffix));
-			total_consume.setText(formatFuelValue(todayConsume, suffix));
+			total_input.setText(formatFuelValue(input30Days, suffix));
+			total_consume.setText(formatFuelValue(consume30Days, suffix));
 		} catch (Exception e) {
 			Log.e(TAG, "Update Error: " + e);
 		}
@@ -262,7 +263,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		refillStartValue = myProgress;
 		lastDataTime = android.os.SystemClock.uptimeMillis();
 		startNozzleBip();
-		
+		Log.d("TAG")
 		// Simulate a 30L refill increase at 500ms intervals
 		android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
 		final double targetRefill = 30.0;
@@ -445,8 +446,11 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
             
 			updateTodayTotals();
 			try {
-				double value = Double.parseDouble(data);
-				updateFuelDisplay(value);
+				// Fallback: If we receive partial data (e.g. from MainActivity routing),
+				// recalculate the current tank status from the database to maintain balance.
+				double lastIn = db.getLastInput();
+				double lastOut = db.getLastOutput();
+				updateFuelDisplay(lastIn - lastOut);
 			} catch (Exception ignored) {}
 		} catch (Exception e) {
 			Log.e(TAG, "setProgress Error: " + e);
