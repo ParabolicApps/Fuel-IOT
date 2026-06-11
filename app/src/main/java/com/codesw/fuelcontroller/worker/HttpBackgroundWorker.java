@@ -52,18 +52,25 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
 
     }
 
-    public  void sendData(String text)
-    {
-        Log.d(TAG, "sendData: Before");
-        //db.addLogs("A","B","C","D");
-        // maybe Db is crashing The Service, It doesnt Reach the After
-        //db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), text, "in");
-        //Send data TODO: Test
-        Intent i = new Intent();
-        i.putExtra(URL_FILTER, text);
-        i.setAction(URL_FILTER);
-        _mainContext.sendBroadcast(i);
-        Log.d(TAG, "sendData: After");
+    public void sendData(String text) {
+        try {
+            Log.d(TAG, "TRACE: sendData starting. Payload: " + text);
+
+            Intent i = new Intent();
+            i.setAction(URL_FILTER);
+            i.putExtra(URL_FILTER, text);
+
+            // Restrict broadcast to this app for security and better tracing
+            i.setPackage(_mainContext.getPackageName());
+
+            Log.d(TAG, "TRACE: Dispatching broadcast [Action: " + i.getAction() + ", Package: " + i.getPackage() + "]");
+
+            _mainContext.sendBroadcast(i);
+
+            Log.d(TAG, "TRACE: Broadcast dispatched successfully.");
+        } catch (Exception e) {
+            Log.e(TAG, "TRACE: Failed to send broadcast: " + e.getMessage(), e);
+        }
     }
 
     /**

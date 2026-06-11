@@ -364,8 +364,9 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
 
     @Override
     public void urlReceived(String counter) {
-        Log.d(TAG, "urlReceived: main: " + counter);
+        Log.d(TAG, "TRACE: urlReceived in MainActivity: " + counter);
         if (counter == null || !counter.contains("/")) {
+            Log.d(TAG, "TRACE: Routing partial/single data to fragment: " + counter);
             sendDataFrag(counter, counter);
             return;
         }
@@ -373,22 +374,33 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         String[] telemetryParts = counter.split("/");
         if (telemetryParts.length >= 2) {
             String inData = telemetryParts[0];
+            Log.d(TAG, "TRACE: Routing full telemetry to fragment. Parts: " + inData + " / " + telemetryParts[1]);
             sendDataFrag(inData, counter);
         }
     }
 
     public void sendDataFrag(String data, String homeData) {
+        Log.d(TAG, "TRACE: sending to fragment from activity" + this.getClass().getSimpleName());
         // Find the currently active fragment in the container
         androidx.fragment.app.Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
         
-        if (currentFragment instanceof Frag1FragmentActivity) {
-            ((Frag1FragmentActivity) currentFragment).setProgress(homeData);
-        } else if (currentFragment instanceof Frag2FragmentActivity) {
-            ((Frag2FragmentActivity) currentFragment).setData(data);
-        } else if (currentFragment instanceof MapsFragment) {
-            ((MapsFragment) currentFragment).setProgress(data);
+        if (currentFragment != null) {
+            Log.d(TAG, "TRACE: Found active fragment: " + currentFragment.getClass().getSimpleName());
+            if (currentFragment instanceof Frag1FragmentActivity) {
+                Log.d(TAG, "TRACE: Passing homeData to Frag1FragmentActivity");
+                ((Frag1FragmentActivity) currentFragment).setProgress(homeData);
+            } else if (currentFragment instanceof Frag2FragmentActivity) {
+                Log.d(TAG, "TRACE: Passing data to Frag2FragmentActivity");
+                ((Frag2FragmentActivity) currentFragment).setData(data);
+            } else if (currentFragment instanceof MapsFragment) {
+                Log.d(TAG, "TRACE: Passing data to MapsFragment");
+                ((MapsFragment) currentFragment).setProgress(data);
+            }
+        } else {
+            Log.e(TAG, "TRACE: No active fragment found in R.id.container!");
         }
     }
+
     public void exportDB() {
         String databaseName = "data.db";
         File dbFile = getDatabasePath(databaseName);

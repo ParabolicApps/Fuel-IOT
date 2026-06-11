@@ -33,11 +33,13 @@ public class UrlBroadcastReceiver extends BroadcastReceiver {
      */
     @Override
     public void onReceive(Context ctx, Intent intent) {
-        Log.d(TAG, "onReceive: data received");
+        String response = intent.getStringExtra(Checker.URL_FILTER);
+        Log.d(TAG, "onReceive: Data received from broadcast. Payload: " + response);
         if(ctx instanceof UrlBroadcastReceiverListener) {
-            String response = intent.getStringExtra(Checker.URL_FILTER);
+            Log.d(TAG, "onReceive: Routing to listener (Activity/Fragment)");
             ((UrlBroadcastReceiverListener)ctx).urlReceived(response);
-            Log.d(TAG, "onReceive: routed to listener");
+        } else {
+            Log.w(TAG, "onReceive: Context does not implement UrlBroadcastReceiverListener");
         }
     }
 }

@@ -85,7 +85,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private SeekBar seekbar1;
 	private LinearLayout card1, card2, card3;
 	private ImageView carLogo, nozzleLogo;
-
+	private ImageView resetBtn;
 	SQLiteHandler db;
 	private SharedPreferences prefs;
 
@@ -137,7 +137,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		textview1 = _view.findViewById(R.id.textview1);
 		textview2 = _view.findViewById(R.id.textview2);
 		textview3 = _view.findViewById(R.id.textview3);
-
+		resetBtn = _view.findViewById(R.id.reset_button);
 		// Parent containers for neon glow toggle
 		card1 = (LinearLayout) total_input.getParent();
 		card2 = (LinearLayout) total_consume.getParent();
@@ -147,6 +147,18 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		seekbar1 = _view.findViewById(R.id.seekbar1);
 		carLogo = _view.findViewById(R.id.car_logo);
 		nozzleLogo = _view.findViewById(R.id.nozzle_logo);
+
+		statusText.setOnClickListener(v -> {
+			if (!isRefilling) {
+				resetStatusText();
+			}
+		});
+
+		resetBtn.setOnClickListener(v -> {
+			if (!isRefilling) {
+				resetStatusText();
+			}
+		});
 
 		db = SQLiteHandler.getInstance(getContext());
 		prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
@@ -207,7 +219,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			value = 0;
 		}
 		double sanitizedValue = Math.max(0, value);
-		DecimalFormat decimalFormat = new DecimalFormat("#,##0.#", DecimalFormatSymbols.getInstance(Locale.getDefault()));
+		DecimalFormat decimalFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.getDefault()));
 		return decimalFormat.format(sanitizedValue) + suffix;
 	}
 
@@ -227,7 +239,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		waveLoadingView.setWaveColor(ContextCompat.getColor(getContext(), R.color.neon_green));
 		waveLoadingView.setProgressValue((int)myProgress);
 
-		String progressValue = String.valueOf(myProgress);
+		String progressValue = String.format(Locale.getDefault(), "%.2f", myProgress);
 		waveLoadingView.setCenterTitle(progressValue + "%");
 		
 		// Adjust title color for better readability against wave
@@ -263,7 +275,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		refillStartValue = myProgress;
 		lastDataTime = android.os.SystemClock.uptimeMillis();
 		startNozzleBip();
-		Log.d("TAG")
+		//Log.d("TAG")
 		// Simulate a 30L refill increase at 500ms intervals
 		android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
 		final double targetRefill = 30.0;
@@ -271,7 +283,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			final int count = i;
 			handler.postDelayed(() -> {
 				if (statusText != null) {
-					statusText.setText("⛽ Fueling... " + count + "L");
+					statusText.setText("⛽ Fueling... " + String.format(Locale.getDefault(), "%.2f", (double)count) + "L");
 					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 				}
 				// Refresh Today cards during simulation too
@@ -322,7 +334,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		isRefilling = false;
 		stopNozzleBip();
 		if (statusText != null) {
-			statusText.setText("⛽ Refill Complete: " + String.format(Locale.getDefault(), "%.1f", refilledAmount) + "L");
+			statusText.setText("⛽ Refill Complete: " + String.format(Locale.getDefault(), "%.2f", refilledAmount) + "L");
 			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 		}
 		showRefillSummary(refilledAmount);
@@ -337,7 +349,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		if (getContext() == null) return;
 		new com.google.android.material.dialog.MaterialAlertDialogBuilder(getContext())
 				.setTitle("Refill Complete")
-				.setMessage("A total of " + String.format(Locale.getDefault(), "%.1f", amount) + " Ltrs has been added to your tank.")
+				.setMessage("A total of " + String.format(Locale.getDefault(), "%.2f", amount) + " Ltrs has been added to your tank.")
 				.setPositiveButton("OK", null)
 				.show();
 	}
@@ -435,15 +447,17 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 */
 	public void setProgress(String data){
 		try {
-			Log.d(TAG, "setProgress called: " + data);
+			Log.d(TAG, "TRACE: setProgress called in Frag1FragmentActivity with: " + data);
 			// Optional: Toast.makeText(getContext(), "Sync: " + data, Toast.LENGTH_SHORT).show();
 			
 			if (data != null && data.contains("/")) {
+				Log.d(TAG, "TRACE: Data contains separator. Routing to handleTelemetryPacket");
 				handleTelemetryPacket(data);
 				updateTodayTotals();
 				return;
 			}
             
+			Log.d(TAG, "TRACE: Data is partial/single value. Updating totals and recalculating balance.");
 			updateTodayTotals();
 			try {
 				// Fallback: If we receive partial data (e.g. from MainActivity routing),
@@ -501,6 +515,9 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 		if (!isRefilling) {
 			isRefilling = true;
+			if (getContext() != null) {
+				Toast.makeText(getContext(), "Refill Started: Detecting fuel increase...", Toast.LENGTH_SHORT).show();
+			}
 			animationHandler.removeCallbacksAndMessages("status_reset");
 			refillStartValue = currentValue - delta;
 			Log.d(TAG, "Starting nozzle animation, baseline=" + refillStartValue);
@@ -509,7 +526,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 		if (statusText != null) {
 			double accumulatedDelta = currentValue - refillStartValue;
-			statusText.setText("Fuel activity... " + String.format(Locale.getDefault(), "%.1f", Math.abs(accumulatedDelta)) + "L");
+			statusText.setText("Fuel activity... " + String.format(Locale.getDefault(), "%.2f", Math.abs(accumulatedDelta)) + "L");
 			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 		}
 
@@ -529,20 +546,24 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		isRefilling = false;
 		stopNozzleBip();
 		if (statusText != null) {
-			statusText.setText("Activity Complete: " + String.format(Locale.getDefault(), "%.1f", Math.abs(accumulatedDelta)) + "L");
+			statusText.setText("Activity Complete: " + String.format(Locale.getDefault(), "%.2f", Math.abs(accumulatedDelta)) + "L (Tap to Reset)");
 			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 		}
 		// Final refresh of totals once the activity ends
 		updateTodayTotals();
-		scheduleStatusReset();
+		// Removed scheduleStatusReset() to keep text until manual reset
 	}
 
 	private void updateFuelDisplay(double value) {
-		if (!isAdded() || getView() == null) return;
+		if (!isAdded() || getView() == null) {
+			Log.w(TAG, "updateFuelDisplay: Fragment not attached, skipping UI update");
+			return;
+		}
 		
 		animationHandler.post(() -> {
 			if (!isAdded() || getView() == null) return;
 			myProgress = value;
+			Log.d(TAG, "UI Update: Setting fuel level to " + value);
 			
 			// Update Tank Status Display
 			if (monthly_usage_total != null) {
@@ -554,7 +575,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			// Update Wave Animation
 			// Using 100 as max tank capacity for percentage display
 			waveLoadingView.setProgressValue((int)Math.max(0, Math.min(100, value)));
-			waveLoadingView.setCenterTitle(String.format(Locale.getDefault(), "%.1f", value) + "%");
+			waveLoadingView.setCenterTitle(String.format(Locale.getDefault(), "%.2f", value) + "%");
 			
 			// If we are NOT in the middle of a nozzle animation, 
 			// still ensure Today values are correct for small fluctuations

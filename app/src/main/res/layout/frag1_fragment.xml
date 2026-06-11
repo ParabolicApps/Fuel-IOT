@@ -45,6 +45,7 @@
                     android:letterSpacing="0.05" />
 
                 <ImageView
+                    android:id="@+id/reset_button"
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:layout_alignParentEnd="true"
@@ -92,7 +93,11 @@
                     android:textColor="?attr/appSubTextColor"
                     android:textSize="14sp"
                     android:layout_marginTop="12dp"
-                    android:letterSpacing="0.02"/>
+                    android:letterSpacing="0.02"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp"/>
             </LinearLayout>
 
             <!-- Grid Cards -->

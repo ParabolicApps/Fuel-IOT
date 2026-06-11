@@ -55,38 +55,60 @@ import lecho.lib.hellocharts.view.Chart;
 import lecho.lib.hellocharts.view.LineChartView;
 
 /**
- * Frag2FragmentActivity manages the Analytics dashboard.
- * It visualizes historical fuel data (refills and consumption) using HelloCharts.
+ * Frag2FragmentActivity manages the Analytics dashboard of the Fuel-IOT application.
+ *
+ * Despite the "Activity" suffix in its name, this class is a {@link Fragment} that provides
+ * deep insights into fuel consumption and refueling patterns using interactive charts.
+ *
+ * Key Features:
+ * <ul>
+ *   <li><b>Dual-Chart Visualization:</b> Separate charts for Refuelled and Consumed data.</li>
+ *   <li><b>Interactive Tooltips:</b> Custom-styled tooltips showing precise data points on touch.</li>
+ *   <li><b>Dynamic Filtering:</b> Switch between Daily and Weekly views via a range spinner.</li>
+ *   <li><b>Advanced Chart Controls:</b> Options to toggle lines, points, cubic interpolation, and area filling.</li>
+ *   <li><b>Theming:</b> Support for custom typography and neon-styled accents.</li>
+ * </ul>
+ *
+ * Libraries Used:
+ * <ul>
+ *   <li><a href="https://github.com/lecho/hellocharts-android">HelloCharts</a>: For high-performance charting.</li>
+ * </ul>
  */
 public class Frag2FragmentActivity extends Fragment {
 
 	private static final String TAG = "Frag2FragmentActivity";
 	private String fontPath = "";
 
+	// UI Components - Charts and Navigation
 	private Spinner rangeSpinner;
 	private LineChartView mainChart;
 	private LineChartView secondaryChart;
 	private LineChartData mainChartData;
 
+	// Tooltip Components for Main Chart
 	private View tooltip1;
 	private TextView tooltip1Header;
 	private TextView tooltip1Value;
 
+	// Tooltip Components for Secondary Chart
 	private View tooltip2;
 	private TextView tooltip2Header;
 	private TextView tooltip2Value;
 
+	// Dashboard Metric Labels
 	private TextView totalRefillText;
 	private TextView totalConsumeText;
 
+	// Data Management
 	private SQLiteHandler db;
 
+	// Default Chart Configuration
 	private int numberOfLines = 1;
 	private final int maxNumberOfLines = 4;
 	private final int numberOfPoints = 12;
-
 	private final float[][] randomNumbersTab = new float[maxNumberOfLines][numberOfPoints];
 
+	// Chart Visual Flags
 	private boolean hasAxes = true;
 	private boolean hasAxesNames = true;
 	private boolean hasLines = true;
@@ -98,6 +120,9 @@ public class Frag2FragmentActivity extends Fragment {
 	private boolean hasLabelForSelected = true;
 	private boolean pointsHaveDifferentColor;
 
+	/**
+	 * Fragment lifecycle method. Sets up the options menu and initializes the view hierarchy.
+	 */
 	@RequiresApi(api = Build.VERSION_CODES.O)
 	@NonNull
 	@Override
@@ -137,13 +162,18 @@ public class Frag2FragmentActivity extends Fragment {
 		db = new SQLiteHandler(getContext());
 	}
 
+	/**
+	 * Sets up event listeners, interactive chart behaviors, and loads the initial dataset.
+	 */
 	private void initializeLogic() {
 		if (mainChart != null) {
+			// Register custom touch listener for the 'Refuelled' chart
 			mainChart.setOnValueTouchListener(new ValueTouchListener(mainChart, tooltip1, tooltip1Header, tooltip1Value, "Refuelled", ContextCompat.getColor(requireContext(), R.color.neon_blue)));
 			mainChart.setViewportCalculationEnabled(false);
 		}
 		
 		if (secondaryChart != null) {
+			// Register custom touch listener for the 'Consumed' chart
 			secondaryChart.setOnValueTouchListener(new ValueTouchListener(secondaryChart, tooltip2, tooltip2Header, tooltip2Value, "Consumed", ContextCompat.getColor(requireContext(), R.color.neon_orange)));
 			secondaryChart.setViewportCalculationEnabled(false);
 		}
@@ -453,6 +483,11 @@ public class Frag2FragmentActivity extends Fragment {
 		}
 	}
 
+	/**
+	 * Custom listener that handles touch events on chart data points.
+	 * When a value is selected, it positions and populates a floating tooltip view
+	 * with precise metrics and labels.
+	 */
 	private class ValueTouchListener implements LineChartOnValueSelectListener {
 		private final LineChartView chart;
 		private final View tooltip;
@@ -515,6 +550,10 @@ public class Frag2FragmentActivity extends Fragment {
 		}
 	}
 
+	/**
+	 * Populates both charts with data from the last 7 days.
+	 * Calculates dates dynamically based on current system time.
+	 */
 	public void showWeeklyChart() {
 		Calendar calendar = Calendar.getInstance();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd", Locale.getDefault());
@@ -590,6 +629,15 @@ public class Frag2FragmentActivity extends Fragment {
 		totalConsumeText.setText(String.format(Locale.getDefault(), "%.1f\n%s Total", weeklyConsume, suffix));
 	}
 
+	/**
+	 * Helper method to configure visual properties for a chart instance.
+	 * Sets up lines, colors, axis styling (labels/fonts), and background transparency.
+	 *
+	 * @param chart The LineChartView to update.
+	 * @param points The data points to plot.
+	 * @param axisXValues The custom labels for the X-axis.
+	 * @param strokeColor The primary line and fill color.
+	 */
 	private void updateChartDisplay(LineChartView chart, List<PointValue> points, List<AxisValue> axisXValues, int strokeColor) {
 		if (points.isEmpty()) {
 			points.add(new PointValue(0, 0));
@@ -646,7 +694,8 @@ public class Frag2FragmentActivity extends Fragment {
 
 	public void setData(String data) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			showDailyChart();
+			showWeeklyChart();
+			//showDailyChart();
 		}
 	}
 
