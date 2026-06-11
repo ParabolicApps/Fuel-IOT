@@ -99,22 +99,38 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
 
 
         mainBnv.setOnItemSelectedListener(item -> {
+            FragmentManager fm = getSupportFragmentManager();
+            androidx.fragment.app.FragmentTransaction ft = fm.beginTransaction();
+            ft.setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out);
+            
+            String tag = "";
+            androidx.fragment.app.Fragment fragment = null;
+
             switch (item.getItemId()) {
                 case R.id.home:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new Frag1FragmentActivity(), "Home").addToBackStack(null).commit();
+                    tag = "Home";
+                    fragment = new Frag1FragmentActivity();
                     break;
                 case R.id.analytics:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new Frag2FragmentActivity(), "Analytics").addToBackStack(null).commit();
+                    tag = "Analytics";
+                    fragment = new Frag2FragmentActivity();
                     break;
                 case R.id.map:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new MapsFragment(), "Map").addToBackStack(null).commit();
+                    tag = "Map";
+                    fragment = new MapsFragment();
                     break;
                 case R.id.devices:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new DevicesFragment(), "Devices").addToBackStack(null).commit();
+                    tag = "Devices";
+                    fragment = new DevicesFragment();
                     break;
                 case R.id.settings:
-                    fragmentTransaction.beginTransaction().setCustomAnimations(R.anim.alpha_in, R.anim.alpha_out).replace(R.id.container, new SettingsFragment()).addToBackStack(null).commit();
+                    tag = "Settings";
+                    fragment = new SettingsFragment();
                     break;
+            }
+            
+            if (fragment != null) {
+                ft.replace(R.id.container, fragment, tag).commit();
             }
             invalidateOptionsMenu();
             return true;
@@ -124,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
         receiver = new UrlBroadcastReceiver();
         filter = new IntentFilter();
         filter.addAction(Checker.URL_FILTER);
-        db = new SQLiteHandler(getApplicationContext());
+        db = SQLiteHandler.getInstance(getApplicationContext());
         
         // Start Firebase real-time sync if user is signed in
         if (FirebaseSyncManager.isSignedIn()) {
@@ -348,43 +364,30 @@ public class MainActivity extends AppCompatActivity implements UrlBroadcastRecei
 
     @Override
     public void urlReceived(String counter) {
-        Log.d(TAG, "urlReceived: main: "+counter);
+        Log.d(TAG, "urlReceived: main: " + counter);
         if (counter == null || !counter.contains("/")) {
-            sendDataFrag(counter);
+            sendDataFrag(counter, counter);
             return;
         }
 
         String[] telemetryParts = counter.split("/");
-        if (telemetryParts.length < 2) {
-            Log.w(TAG, "urlReceived: invalid telemetry packet: " + counter);
-            return;
+        if (telemetryParts.length >= 2) {
+            String inData = telemetryParts[0];
+            sendDataFrag(inData, counter);
         }
-
-        Log.d(TAG, "urlReceived: input: "+telemetryParts[0]);
-        String inData = telemetryParts[0];
-        String outData = telemetryParts[1];
-
-        // Send Data Activity to Fragment
-        sendDataFrag(inData, counter);
-        Log.d(TAG, "urlReceived: output: "+outData);
     }
-    public void sendDataFrag(String data){
-        sendDataFrag(data, data);
-    }
-    public void sendDataFrag(String data, String homeData){
-        Frag1FragmentActivity fragment1 = (Frag1FragmentActivity) getSupportFragmentManager().findFragmentByTag("Home");
-        if (fragment1 != null){
-            fragment1.setProgress(homeData);
-        }
-        Frag2FragmentActivity fragment2 = (Frag2FragmentActivity) getSupportFragmentManager().findFragmentByTag("Analytics");
-        if (fragment2 != null){
-            fragment2.setData(data);
-        }
-        MapsFragment fragment3 = (MapsFragment) getSupportFragmentManager().findFragmentByTag("Map");
-        if (fragment3 != null){
-            fragment3.setProgress(data);
-        }
 
+    public void sendDataFrag(String data, String homeData) {
+        // Find the currently active fragment in the container
+        androidx.fragment.app.Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.container);
+        
+        if (currentFragment instanceof Frag1FragmentActivity) {
+            ((Frag1FragmentActivity) currentFragment).setProgress(homeData);
+        } else if (currentFragment instanceof Frag2FragmentActivity) {
+            ((Frag2FragmentActivity) currentFragment).setData(data);
+        } else if (currentFragment instanceof MapsFragment) {
+            ((MapsFragment) currentFragment).setProgress(data);
+        }
     }
     public void exportDB() {
         String databaseName = "data.db";

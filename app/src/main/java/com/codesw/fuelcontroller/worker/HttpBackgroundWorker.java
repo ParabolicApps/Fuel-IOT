@@ -26,6 +26,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 
 /**
@@ -45,7 +46,7 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
     public  HttpBackgroundWorker(Context context)
     {
         c = Calendar.getInstance();
-        db = new SQLiteHandler(context);
+        db = SQLiteHandler.getInstance(context);
         _mainContext=context;
         sharedpreferences= _mainContext.getSharedPreferences("logs", Context.MODE_PRIVATE);
 
@@ -103,16 +104,14 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
 
 
             SharedPreferences.Editor editor = sharedpreferences.edit();
-            String inputData = text.split("/")[0];
+            String inputData = text.split("/")[0].trim();
             // Match if its a new data, Otherwise ignore
-            // Storing old data and checking if its not new
-
-            if (inputData.contains(incoming)) {
-                Log.d(TAG, "doInBackground: Ignoring input: " + incoming);
+            if (inputData.equals(incoming)) {
+                Log.d(TAG, "doInBackground: Ignoring input duplicate: " + incoming);
                 sendData(text);
             } else {
-                Log.d(TAG, "doInBackground: Sending:");
-                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), inputData, "in");
+                Log.d(TAG, "doInBackground: Logging new Input: " + inputData);
+                db.addLogs(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(c.getTimeInMillis()), inputData, "in");
                 sendData(text);
 
                 // Low Fuel Alert logic
@@ -130,26 +129,29 @@ public class HttpBackgroundWorker extends AsyncTask<String,Void,String> {
                 }
 
                 editor.putString("incoming", inputData);
-                editor.commit();
+                editor.apply();
             }
-            String outData = text.split("/")[1];
-            if (outData.contains(outcoming)) {
-                Log.d(TAG, "doInBackground: Ignoring Input: " + outcoming);
-                sendData(text);
-            } else {
-                Log.d(TAG, "doInBackground:  Sending:");
-                db.addLogs(new SimpleDateFormat("hh:mm a").format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy").format(c.getTimeInMillis()), outData, "out");
 
-                // Refill Alert logic
-                boolean refillAlertEnabled = defaultPrefs.getBoolean("refill_alert", true);
-                if (refillAlertEnabled) {
-                    showNotification("Refill Detected", "A fuel refill of " + outData + " Ltrs has been logged.");
+            if (text.contains("/")) {
+                String outData = text.split("/")[1].trim();
+                if (outData.equals(outcoming)) {
+                    Log.d(TAG, "doInBackground: Ignoring Output duplicate: " + outcoming);
+                    sendData(text);
+                } else {
+                    Log.d(TAG, "doInBackground: Logging new Output: " + outData);
+                    db.addLogs(new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(c.getTimeInMillis()), new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(c.getTimeInMillis()), outData, "out");
+
+                    // Refill Alert logic
+                    boolean refillAlertEnabled = defaultPrefs.getBoolean("refill_alert", true);
+                    if (refillAlertEnabled) {
+                        showNotification("Refill Detected", "A fuel refill of " + outData + " Ltrs has been logged.");
+                    }
+
+                    sendData(text);
+
+                    editor.putString("outcoming", outData);
+                    editor.apply();
                 }
-
-                sendData(text);
-
-                editor.putString("outcoming", outData);
-                editor.commit();
             }
         } catch (Exception ee) {
             Log.e(TAG, "doInBackground: Exception: " + ee);

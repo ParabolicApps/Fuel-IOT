@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.codesw.fuelcontroller" />
+                  <option name="mobileSdkAppId" value="1:605045350161:android:f0a8706ccf3156521e76b0" />
+                  <option name="projectId" value="fuel-iot-b5646" />
+                  <option name="projectNumber" value="605045350161" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

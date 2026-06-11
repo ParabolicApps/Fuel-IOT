@@ -60,10 +60,12 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 
 	private static final String TAG = "Frag1FragmentActivity";
-	private static final double SIGNIFICANT_CHANGE_THRESHOLD = 1.0;
+	private static final double SIGNIFICANT_CHANGE_THRESHOLD = 0.1;
 	private double myProgress = 0;
 	private double lastInputValue = Double.NaN;
 	private double lastOutputValue = Double.NaN;
+	private double baselineInputValue = Double.NaN;
+	private double baselineOutputValue = Double.NaN;
 	private final boolean simulate = false;
 	private final boolean configured = true;
 	private String fontName = "";
@@ -83,7 +85,6 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private LinearLayout card1, card2, card3;
 	private ImageView carLogo, nozzleLogo;
 
-	private final Calendar c = Calendar.getInstance();
 	SQLiteHandler db;
 	private SharedPreferences prefs;
 
@@ -91,7 +92,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private double refillStartValue = 0;
 	private long lastDataTime = 0;
 	private android.os.Handler animationHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-	private Runnable nozzleBipRunnable;
+	private android.animation.ValueAnimator nozzleAnimator;
 
 	@NonNull
 	@Override
@@ -117,6 +118,12 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		applyPreferences();
 	}
 
+	@Override
+	public void onPause() {
+		super.onPause();
+		stopNozzleBip();
+	}
+
 	/**
 	 * Binds UI components and initializes core data handlers.
 	 */
@@ -140,7 +147,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		carLogo = _view.findViewById(R.id.car_logo);
 		nozzleLogo = _view.findViewById(R.id.nozzle_logo);
 
-		db = new SQLiteHandler(getContext());
+		db = SQLiteHandler.getInstance(getContext());
 		prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 	}
 
@@ -149,15 +156,18 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 * neon mode styling, and latest database statistics.
 	 */
 	private void applyPreferences() {
-		if (prefs == null) return;
-		String unit = prefs.getString("measurement_unit", "L");
+		if (prefs == null || db == null) return;
 		boolean neonMode = prefs.getBoolean("neon_mode", true);
 
-		String suffix = "L".equals(unit) ? " Ltrs" : " Gal";
+		updateTodayTotals();
+		
+		// Initialize Tank Status from last known values in DB
+		double lastIn = db.getLastInput();
+		double lastOut = db.getLastOutput();
+		updateFuelDisplay(lastIn - lastOut);
 
-		monthly_usage_total.setText(formatFuelValue(parseFuelValue(db.getMonthlyTotal(new SimpleDateFormat("MM").format(c.getTimeInMillis()))), suffix));
-		total_input.setText(formatFuelValue(db.getTodayTotalInput(), suffix));
-		total_consume.setText(formatFuelValue(db.getTodayTotalUsage(), suffix));
+		textview1.setText("Today");
+		textview2.setText("Today");
 
 		// Toggle Neon Glow effects on card backgrounds
 		if (neonMode) {
@@ -168,6 +178,26 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 			card1.setBackgroundResource(R.drawable.button_shape);
 			card2.setBackgroundResource(R.drawable.button_shape);
 			card3.setBackgroundResource(R.drawable.button_shape);
+		}
+	}
+
+	/**
+	 * Refreshes the "Today" and "Monthly" totals from the database.
+	 */
+	private void updateTodayTotals() {
+		if (prefs == null || db == null || !isAdded() || getView() == null) return;
+
+		try {
+			String unit = prefs.getString("measurement_unit", "L");
+			String suffix = "L".equals(unit) ? " Ltrs" : " Gal";
+
+			double todayInput = db.getTodayTotalInput();
+			double todayConsume = db.getTodayTotalUsage();
+
+			total_input.setText(formatFuelValue(todayInput, suffix));
+			total_consume.setText(formatFuelValue(todayConsume, suffix));
+		} catch (Exception e) {
+			Log.e(TAG, "Update Error: " + e);
 		}
 	}
 
@@ -228,7 +258,9 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private void triggerFuelingSimulation() {
 		if (isRefilling) return;
 		isRefilling = true;
+		animationHandler.removeCallbacksAndMessages("status_reset");
 		refillStartValue = myProgress;
+		lastDataTime = android.os.SystemClock.uptimeMillis();
 		startNozzleBip();
 		
 		// Simulate a 30L refill increase at 500ms intervals
@@ -241,45 +273,42 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 					statusText.setText("⛽ Fueling... " + count + "L");
 					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 				}
+				// Refresh Today cards during simulation too
+				updateTodayTotals();
+				
 				if (count == targetRefill) {
-					// Finish simulation with final summary
 					handler.postDelayed(() -> finishRefill(targetRefill), 1000);
 				}
 			}, i * 500); 
 		}
 	}
 
-	/**
-	 * Starts a persistent rapid blinking animation alternating between 
-	 * the car logo and the fuel nozzle icon.
-	 */
 	private void startNozzleBip() {
 		if (carLogo == null || nozzleLogo == null) return;
-		stopNozzleBip(); 
+		if (nozzleAnimator != null && nozzleAnimator.isRunning()) return;
 
-		nozzleBipRunnable = new Runnable() {
-			boolean bipOn = false;
-			@Override
-			public void run() {
-				if (bipOn) {
-					carLogo.animate().alpha(0.8f).setDuration(100).start();
-					nozzleLogo.animate().alpha(0f).setDuration(100).start();
-				} else {
-					carLogo.animate().alpha(0f).setDuration(100).start();
-					nozzleLogo.animate().alpha(1f).setDuration(100).start();
-				}
-				bipOn = !bipOn;
-				animationHandler.postDelayed(this, 250);
+		nozzleAnimator = android.animation.ValueAnimator.ofFloat(0f, 1f);
+		nozzleAnimator.setDuration(400);
+		nozzleAnimator.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+		nozzleAnimator.setRepeatMode(android.animation.ValueAnimator.REVERSE);
+		nozzleAnimator.addUpdateListener(animation -> {
+			float val = (float) animation.getAnimatedValue();
+			if (val > 0.5f) {
+				carLogo.setAlpha(0f);
+				nozzleLogo.setAlpha(1f);
+			} else {
+				carLogo.setAlpha(0.8f);
+				nozzleLogo.setAlpha(0f);
 			}
-		};
-		animationHandler.post(nozzleBipRunnable);
+		});
+		nozzleAnimator.start();
 	}
 
-	/**
-	 * Stops the nozzle blinking animation and resets visual state to default.
-	 */
 	private void stopNozzleBip() {
-		animationHandler.removeCallbacks(nozzleBipRunnable);
+		if (nozzleAnimator != null) {
+			nozzleAnimator.cancel();
+			nozzleAnimator = null;
+		}
 		if (carLogo != null) carLogo.setAlpha(0.8f);
 		if (nozzleLogo != null) nozzleLogo.setAlpha(0f);
 	}
@@ -291,8 +320,12 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private void finishRefill(double refilledAmount) {
 		isRefilling = false;
 		stopNozzleBip();
-		resetStatusText();
+		if (statusText != null) {
+			statusText.setText("⛽ Refill Complete: " + String.format(Locale.getDefault(), "%.1f", refilledAmount) + "L");
+			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
+		}
 		showRefillSummary(refilledAmount);
+		scheduleStatusReset();
 	}
 
 	/**
@@ -313,9 +346,14 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 * and current highway location.
 	 */
 	private void resetStatusText() {
-		if (statusText == null) return;
+		if (statusText == null || isRefilling) return;
 		statusText.setText("● Engine: ON  |  📍 Dhaka-Chittagong Highway");
 		statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_green));
+	}
+
+	private void scheduleStatusReset() {
+		animationHandler.removeCallbacksAndMessages("status_reset");
+		animationHandler.postAtTime(this::resetStatusText, "status_reset", android.os.SystemClock.uptimeMillis() + 240000);
 	}
 
 	@Override
@@ -358,51 +396,34 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 * across all child views of the fragment.
 	 */
 	private void overrideFonts(final android.content.Context context, final View v) {
-
 		try {
-			Typeface
-			typeface = Typeface.createFromAsset(getContext().getAssets(), fontName);
-			if ((v instanceof ViewGroup)) {
-				ViewGroup vg = (ViewGroup) v;
-				for (int i = 0;
-				i < vg.getChildCount();
-				i++) {
-					View child = vg.getChildAt(i);
-					overrideFonts(context, child);
-				}
-			}
-			else {
-				if ((v instanceof TextView)) {
-					((TextView) v).setTypeface(typeface);
-				}
-				else {
-					if ((v instanceof EditText )) {
-						((EditText) v).setTypeface(typeface);
-					}
-					else {
-						if ((v instanceof Button)) {
-							((Button) v).setTypeface(typeface);
-						}
-					}
-				}
-			}
+			Typeface tf = Typeface.createFromAsset(context.getAssets(), fontName);
+			applyTypefaceRecursive(v, tf);
+		} catch (Exception e) {
+			Log.e(TAG, "Font error: " + e);
 		}
-		catch(Exception e)
-		{
-			Toast.makeText(getContext(), "Error Loading Font", Toast.LENGTH_SHORT).show();
+	}
+
+	private void applyTypefaceRecursive(View v, Typeface tf) {
+		if (v instanceof ViewGroup) {
+			ViewGroup vg = (ViewGroup) v;
+			for (int i = 0; i < vg.getChildCount(); i++) {
+				applyTypefaceRecursive(vg.getChildAt(i), tf);
+			}
+		} else if (v instanceof TextView) {
+			((TextView) v).setTypeface(tf);
+		} else if (v instanceof Button) {
+			((Button) v).setTypeface(tf);
+		} else if (v instanceof EditText) {
+			((EditText) v).setTypeface(tf);
 		}
 	}
 
 
-	/**
-	 * Callback from UrlBroadcastReceiver for legacy counter data.
-	 */
 	@Override
 	public void urlReceived(String counter) {
-		Log.d(TAG, "urlReceived: "+counter.split("/")[0]);
-		String outData = counter.split("/")[0];
-		waveLoadingView.setProgressValue((int)Double.parseDouble(counter));
-		Log.d(TAG, "urlReceived: "+counter.split("/")[0]);
+		Log.d(TAG, "urlReceived: " + counter);
+		setProgress(counter);
 	}
 
 	/**
@@ -413,50 +434,20 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	 */
 	public void setProgress(String data){
 		try {
+			Log.d(TAG, "setProgress called: " + data);
+			// Optional: Toast.makeText(getContext(), "Sync: " + data, Toast.LENGTH_SHORT).show();
+			
 			if (data != null && data.contains("/")) {
 				handleTelemetryPacket(data);
+				updateTodayTotals();
 				return;
 			}
-
-			double value = Double.parseDouble(data);
-			long currentTime = System.currentTimeMillis();
-			lastDataTime = currentTime;
-			
-			// Detect significant fuel increase (Auto Refill Start)
-			if (!isRefilling && value > myProgress + 1.0) {
-				isRefilling = true;
-				refillStartValue = myProgress;
-				startNozzleBip();
-			}
-			
-			if (isRefilling) {
-				// Update real-time fueling counter
-				if (statusText != null) {
-					statusText.setText("⛽ Fueling... " + String.format(Locale.getDefault(), "%.1f", value) + "L");
-					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
-				}
-				
-				// Automatically terminate refill session if no data for 30 seconds
-				animationHandler.removeCallbacksAndMessages("refill_check");
-				animationHandler.postAtTime(() -> {
-					if (isRefilling && System.currentTimeMillis() - lastDataTime >= 30000) {
-						finishRefill(value - refillStartValue);
-					}
-				}, "refill_check", android.os.SystemClock.uptimeMillis() + 30000);
-
-			} else {
-				// Regular engine monitoring status
-				if (statusText != null && !statusText.getText().toString().contains("Fueling")) {
-					statusText.setText("● Engine: ON  |  📍 Dhaka-Chittagong Highway");
-					statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_green));
-				}
-			}
-			
-			// Update core dashboard metric
-			myProgress = value;
-			waveLoadingView.setProgressValue((int)value);
-			String progressValue = String.valueOf(value);
-			waveLoadingView.setCenterTitle(progressValue + "%");
+            
+			updateTodayTotals();
+			try {
+				double value = Double.parseDouble(data);
+				updateFuelDisplay(value);
+			} catch (Exception ignored) {}
 		} catch (Exception e) {
 			Log.e(TAG, "setProgress Error: " + e);
 		}
@@ -464,70 +455,108 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 	private void handleTelemetryPacket(String data) {
 		String[] parts = data.split("/");
-		if (parts.length < 2) {
-			Log.w(TAG, "Invalid telemetry packet: " + data);
-			return;
-		}
+		if (parts.length < 2) return;
 
 		double inputValue = parseFuelValue(parts[0]);
 		double outputValue = parseFuelValue(parts[1]);
+		double currentLevel = inputValue - outputValue;
 
-		if (Double.isNaN(lastInputValue) || Double.isNaN(lastOutputValue)) {
+		if (Double.isNaN(baselineInputValue)) {
+			baselineInputValue = inputValue;
+			baselineOutputValue = outputValue;
 			lastInputValue = inputValue;
 			lastOutputValue = outputValue;
-			updateFuelDisplay(inputValue);
+			updateFuelDisplay(currentLevel);
 			return;
 		}
 
-		double inputDelta = inputValue - lastInputValue;
-		double outputDelta = outputValue - lastOutputValue;
-		double largestDelta = Math.abs(inputDelta) >= Math.abs(outputDelta) ? inputDelta : outputDelta;
+		// Calculate Deltas with Reset Detection
+		double inputDelta = (inputValue < lastInputValue) ? inputValue : (inputValue - lastInputValue);
+		double outputDelta = (outputValue < lastOutputValue) ? outputValue : (outputValue - lastOutputValue);
+		
 		boolean hasSignificantChange = Math.abs(inputDelta) >= SIGNIFICANT_CHANGE_THRESHOLD
 				|| Math.abs(outputDelta) >= SIGNIFICANT_CHANGE_THRESHOLD;
 
-		lastInputValue = inputValue;
-		lastOutputValue = outputValue;
+		Log.d(TAG, "Telemetry Packet: " + data + " | Delta: " + (Math.max(Math.abs(inputDelta), Math.abs(outputDelta))));
 
 		if (hasSignificantChange) {
-			triggerFuelActivity(inputValue, largestDelta);
+			double deltaForAnimation = Math.abs(inputDelta) >= Math.abs(outputDelta) ? inputDelta : outputDelta;
+			triggerFuelActivity(inputValue, deltaForAnimation);
 		} else if (!isRefilling) {
 			resetStatusText();
 		}
 
-		updateFuelDisplay(inputValue);
+		lastInputValue = inputValue;
+		lastOutputValue = outputValue;
+		updateFuelDisplay(currentLevel);
 	}
 
 	private void triggerFuelActivity(double currentValue, double delta) {
-		lastDataTime = System.currentTimeMillis();
+		Log.d(TAG, "triggerFuelActivity: Value=" + currentValue + " Delta=" + delta + " AlreadyRefilling=" + isRefilling);
+		lastDataTime = android.os.SystemClock.uptimeMillis();
 
 		if (!isRefilling) {
 			isRefilling = true;
+			animationHandler.removeCallbacksAndMessages("status_reset");
 			refillStartValue = currentValue - delta;
+			Log.d(TAG, "Starting nozzle animation, baseline=" + refillStartValue);
 			startNozzleBip();
 		}
 
 		if (statusText != null) {
-			statusText.setText("Fuel activity... " + String.format(Locale.getDefault(), "%.1f", Math.abs(delta)) + "L");
+			double accumulatedDelta = currentValue - refillStartValue;
+			statusText.setText("Fuel activity... " + String.format(Locale.getDefault(), "%.1f", Math.abs(accumulatedDelta)) + "L");
 			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
 		}
 
+		// Update the 'Today' cards whenever there is a nozzle animation / data change
+		updateTodayTotals();
+
 		animationHandler.removeCallbacksAndMessages("refill_check");
 		animationHandler.postAtTime(() -> {
-			if (isRefilling && System.currentTimeMillis() - lastDataTime >= 30000) {
+			if (isRefilling && android.os.SystemClock.uptimeMillis() - lastDataTime >= 30000) {
 				finishFuelActivity();
 			}
 		}, "refill_check", android.os.SystemClock.uptimeMillis() + 30000);
 	}
 
 	private void finishFuelActivity() {
+		double accumulatedDelta = lastInputValue - refillStartValue;
 		isRefilling = false;
 		stopNozzleBip();
-		resetStatusText();
+		if (statusText != null) {
+			statusText.setText("Activity Complete: " + String.format(Locale.getDefault(), "%.1f", Math.abs(accumulatedDelta)) + "L");
+			statusText.setTextColor(ContextCompat.getColor(getContext(), R.color.neon_blue));
+		}
+		// Final refresh of totals once the activity ends
+		updateTodayTotals();
+		scheduleStatusReset();
 	}
 
 	private void updateFuelDisplay(double value) {
-		myProgress = value;
-		waveLoadingView.setProgressValue((int)value);
-		waveLoadingView.setCenterTitle(String.valueOf(value) + "%");
+		if (!isAdded() || getView() == null) return;
+		
+		animationHandler.post(() -> {
+			if (!isAdded() || getView() == null) return;
+			myProgress = value;
+			
+			// Update Tank Status Display
+			if (monthly_usage_total != null) {
+				String unit = prefs.getString("measurement_unit", "L");
+				String suffix = "L".equals(unit) ? " Ltrs" : " Gal";
+				monthly_usage_total.setText(formatFuelValue(value, suffix));
+			}
+
+			// Update Wave Animation
+			// Using 100 as max tank capacity for percentage display
+			waveLoadingView.setProgressValue((int)Math.max(0, Math.min(100, value)));
+			waveLoadingView.setCenterTitle(String.format(Locale.getDefault(), "%.1f", value) + "%");
+			
+			// If we are NOT in the middle of a nozzle animation, 
+			// still ensure Today values are correct for small fluctuations
+			if (!isRefilling) {
+				updateTodayTotals();
+			}
+		});
 	}
 }

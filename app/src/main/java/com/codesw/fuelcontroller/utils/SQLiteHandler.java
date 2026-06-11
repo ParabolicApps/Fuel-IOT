@@ -58,29 +58,25 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     private static final String KEY_DATA = "data";
     private static final String KEY_TYPE = "type";
     
-    private final Calendar calendar = Calendar.getInstance();
-
-    static Context mCtx;
-    private static SQLiteOpenHelper dbInstance;
-
     public static final String TAG = "SQLiteHandler";
+    private static SQLiteHandler instance;
+
+    public static synchronized SQLiteHandler getInstance(Context context) {
+        if (instance == null) {
+            instance = new SQLiteHandler(context.getApplicationContext());
+        }
+        return instance;
+    }
+
+    private final Context mCtx;
 
     public SQLiteHandler(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        mCtx = context;
-    }
-
-    /**
-     * Singleton accessor for the database handler.
-     */
-    public SQLiteOpenHelper getInstance(Context context) {
-        if (dbInstance == null)
-            dbInstance = new SQLiteHandler(context);
-        return dbInstance;
+        this.mCtx = context;
     }
 
 
-    private static String getDatabasePath() {
+    private String getDatabasePath() {
         return mCtx.getApplicationInfo().dataDir + DB_PATH_SUFFIX + DATABASE_NAME;
     }
 
@@ -196,6 +192,18 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     }
 
     /**
+     * Calculates the aggregated sum of the last 7 days for a specific type.
+     */
+    public double getWeeklyTotal(String type) {
+        double total = 0;
+        ArrayList<Float> weeklyData = getWeekly(type);
+        for (Float val : weeklyData) {
+            total += val;
+        }
+        return total;
+    }
+
+    /**
      * Processes hourly fuel usage for the current day.
      * Performs interpolation to handle hours with missing data points.
      * 
@@ -285,14 +293,14 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     public ArrayList<DbModel> getMonthly(String month) {
         SQLiteDatabase db = this.getReadableDatabase();
         ArrayList<DbModel> modelList = new ArrayList<>();
-        Cursor cursor = db.rawQuery("SELECT * FROM log WHERE (date LIKE '%" + month + "-23" + "%')", null);
+        String yearSuffix = new SimpleDateFormat("yy", Locale.getDefault()).format(System.currentTimeMillis());
+        Cursor cursor = db.rawQuery("SELECT * FROM log WHERE (date LIKE '%" + month + "-" + yearSuffix + "%')", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 DbModel count = new DbModel(cursor.getString(0), cursor.getString(1), cursor.getString(2), cursor.getString(3), cursor.getString(4));
                 modelList.add(count);
             }
             cursor.close();
-            db.close();
         }
         return modelList;
     }
@@ -310,7 +318,6 @@ public class SQLiteHandler extends SQLiteOpenHelper {
                 modelList.add(count);
             }
             cursor.close();
-            db.close();
         }
         return modelList;
     }
@@ -321,13 +328,13 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     public String getMonthlyTotal(String month) {
         SQLiteDatabase db = this.getReadableDatabase();
         double count = 0;
-        Cursor cursor = db.rawQuery("SELECT * FROM total WHERE (date LIKE '%" + month + "-23" + "%')", null);
+        String yearSuffix = new SimpleDateFormat("yy", Locale.getDefault()).format(System.currentTimeMillis());
+        Cursor cursor = db.rawQuery("SELECT * FROM total WHERE (date LIKE '%" + month + "-" + yearSuffix + "%')", null);
         if (cursor != null) {
             while (cursor.moveToNext()) {
                 count = count + Double.parseDouble(cursor.getString(2));
             }
             cursor.close();
-            db.close();
         }
         return String.valueOf(count);
     }
@@ -343,21 +350,29 @@ public class SQLiteHandler extends SQLiteOpenHelper {
     public void addLogs(String time, String date, String data, String type) {
         Log.d(TAG, "Add Log Attempt: Date=" + date + " Type=" + type);
 
+        double currentVal = Double.parseDouble(data);
+        double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
+        double delta;
+
+        // Reset Detection: If current value is less than last known, device rebooted/reset
+        if (currentVal < lastVal) {
+            Log.d(TAG, "Reset detected! Device was at " + lastVal + ", now at " + currentVal);
+            delta = currentVal; // Treat entire new value as the addition
+        } else {
+            delta = currentVal - lastVal;
+        }
+
         ContentValues values = new ContentValues();
         values.put(KEY_TIME, time); 
         values.put(KEY_DATE, date); 
         values.put(KEY_DATA, data); 
         values.put(KEY_TYPE, type); 
 
-        // Update daily total based on delta from last known value
+        // Update daily total based on calculated delta
         if (isTotalRowExist(date, type)) {
-            double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
-            double currentVal = Double.parseDouble(data);
-            updateLogsTotal(date, String.valueOf(currentVal - lastVal), type);
+            updateLogsTotal(date, String.valueOf(delta), type);
         } else {
-            double lastVal = "in".equals(type) ? getLastInput() : getLastOutput();
-            double currentVal = Double.parseDouble(data);
-            addLogsTotal(date, String.valueOf(currentVal - lastVal), type);
+            addLogsTotal(date, String.valueOf(delta), type);
         }
 
         SQLiteDatabase db = this.getWritableDatabase();
@@ -397,11 +412,10 @@ public class SQLiteHandler extends SQLiteOpenHelper {
      * Updates an existing aggregated entry with a new delta.
      */
     public void updateLogsTotal(String date, String data, String type) {
-        Calendar c = Calendar.getInstance();
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues totalValues = new ContentValues();
         totalValues.put(KEY_DATE, date);
-        double currentTotal = getLogsTotal(new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(c.getTimeInMillis()), type);
+        double currentTotal = getLogsTotal(date, type);
         totalValues.put(KEY_DATA, Double.parseDouble(data) + currentTotal); 
         totalValues.put(KEY_TYPE, type); 
 
@@ -424,6 +438,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
             }
             cursor.close();
         }
+        // Removed db.close() to avoid closing connection during nested calls
         return count;
     }
 
@@ -475,7 +490,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
      * Convenience method to get total consumption for today.
      */
     public double getTodayTotalUsage() {
-        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(calendar.getTimeInMillis());
+        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(System.currentTimeMillis());
         return getLogsTotal(day, "out");
     }
 
@@ -483,7 +498,7 @@ public class SQLiteHandler extends SQLiteOpenHelper {
      * Convenience method to get total refill volume for today.
      */
     public double getTodayTotalInput() {
-        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(calendar.getTimeInMillis());
+        String day = new SimpleDateFormat("dd-MM-yy", Locale.getDefault()).format(System.currentTimeMillis());
         return getLogsTotal(day, "in");
     }
 
