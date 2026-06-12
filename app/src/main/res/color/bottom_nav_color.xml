@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Apple-style Blue for selected state -->
+    <item android:color="#007AFF" android:state_checked="true" />
+    <!-- Muted Gray for unselected state (Light Theme default) -->
+    <item android:color="#8E8E93" />
+</selector>

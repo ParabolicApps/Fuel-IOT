@@ -48,6 +48,7 @@ import static com.codesw.fuelcontroller.global.Variables.wifiSSID;
 import static com.codesw.fuelcontroller.global.Variables.wifiPSK;
 
 
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,6 +93,15 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply theme before super.onCreate
+        android.content.SharedPreferences prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        boolean isDarkMode = prefs.getBoolean("dark_mode", true);
+        if (isDarkMode) {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
         super.onCreate(savedInstanceState);
 
         //Justify if it is the first-time configuration or configuration for fixing devices after installations.
@@ -138,7 +148,8 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
                         existedSSIDSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                             @Override
                             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                String selectSSID = existedSSIDSpinner.getSelectedItem().toString();
+                                Object selectedItem = existedSSIDSpinner.getSelectedItem();
+                                String selectSSID = selectedItem != null ? selectedItem.toString() : "";
                                 if (selectSSID.isEmpty()) {
                                     isExistedWiFiSelected = false;
                                     isLocked = true;
@@ -265,7 +276,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
             case "refreshExistedSSID":
                 RefreshAnimation.showRefreshAnimation(refreshExistedSSIDBtn, this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiverForSelection, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(this, wifiScanReceiverForSelection, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
                 break;
             case "connectWiFi":
                 ForceConnectWiFi();
@@ -275,7 +286,8 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
                 EditText deviceUnameEdt = (EditText) findViewById(R.id.edt_uname);
                 EditText wifipskEdt = (EditText) findViewById(R.id.edt_psk);
                 EditText wifiTitleEdt = (EditText) findViewById(R.id.edt_title);
-                String wifiSSID = ssidSpinner.getSelectedItem().toString();
+                Object selectedSSIDItem = ssidSpinner.getSelectedItem();
+                String wifiSSID = selectedSSIDItem != null ? selectedSSIDItem.toString() : "";
                 String wifiUnmae = deviceUnameEdt.getText().toString();
                 String wifiPSK = wifipskEdt.getText().toString();
                 String deviceTitle = wifiTitleEdt.getText().toString();
@@ -304,7 +316,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
             case "refreshSSID":
                 RefreshAnimation.showRefreshAnimation(refreshSSIDBtn, this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(this, wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
                 break;
             case "allDone":
                 finish();
@@ -363,7 +375,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
         List<String> ssidList = new ArrayList<String>();
         // Here, this Activity is the current activity
         for (ScanResult scanResult : getScanResults(2)) {
-            Log.e("SSID list child", scanResult.SSID);
+            Log.e("SSID list child", String.valueOf(scanResult.SSID));
             ssidList.add(scanResult.SSID);
         }
 
@@ -371,14 +383,17 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
             //Keep the ssid start with "ESP" and remove others
             //it is important to scan the ssidList from its botton to top because we have to remove items by using item id.
             for (int i = ssidList.size() - 1; i >= 0; i--) {
-                if (ssidList.get(i).length() != 10) {
-                    Log.e("RemoveSSID", ssidList.get(i));
+                if (ssidList.get(i) != null && ssidList.get(i).length() != 10) {
+                    Log.e("RemoveSSID", String.valueOf(ssidList.get(i)));
                     ssidList.remove(i);
-                } else {
+                } else if (ssidList.get(i) != null) {
                     if (!ssidList.get(i).startsWith("ESP")) {
-                        Log.e("RemoveSSID", ssidList.get(i));
+                        Log.e("RemoveSSID", String.valueOf(ssidList.get(i)));
                         ssidList.remove(i);
                     }
+                } else {
+                    Log.e("RemoveSSID", "null");
+                    ssidList.remove(i);
                 }
             }
 
@@ -387,8 +402,8 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
                 boolean remove;
                 for (int i = ssidList.size() - 1; i >= 0; i--) {
                     //Check existence, set a boolean value 'remove' as the tag to remove the item
-                    if (SpUtils.getString(this, ssidList.get(i)).isEmpty()) {
-                        Log.e("RemoveSSID", ssidList.get(i));
+                    if (ssidList.get(i) == null || SpUtils.getString(this, ssidList.get(i)).isEmpty()) {
+                        Log.e("RemoveSSID", String.valueOf(ssidList.get(i)));
                         ssidList.remove(i);
                     }
                 }
@@ -549,10 +564,10 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
         //Update list
         list = wifiManager.getConfiguredNetworks();
         for (WifiConfiguration wifiConfiguration : list) {
-            Log.e("WifiConfiguration", wifiConfiguration.SSID);
+            Log.e("WifiConfiguration", String.valueOf(wifiConfiguration.SSID));
             if (wifiConfiguration.SSID != null && wifiConfiguration.SSID.equals("\"" + wifiSSID + "\"")) {
                 wifiManager.removeNetwork(wifiConfiguration.networkId);
-                Log.e("RemoveWifiConfiguration", wifiConfiguration.SSID);
+                Log.e("RemoveWifiConfiguration", String.valueOf(wifiConfiguration.SSID));
             }
         }
         WifiConfiguration conf = new WifiConfiguration();
@@ -560,13 +575,13 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
         conf.preSharedKey = "\"" + wifiPSK + "\"";
         wifiManager.addNetwork(conf);
         //Todo: implement
-        Log.e("AddWifiConfiguration", wifiSSID);
+        Log.e("AddWifiConfiguration", String.valueOf(wifiSSID));
 
         //Scan WiFi
         connectWiFiBtn.setEnabled(false);
 
         //registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
-        registerReceiver(wifiStateChangedReceiver, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION));
+        ContextCompat.registerReceiver(this, wifiStateChangedReceiver, new IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
 
     }
 
@@ -678,7 +693,7 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
                         wifiManager.enableNetwork(wifiConfiguration.networkId, true);
                         wifiManager.updateNetwork(wifiConfiguration);
                         //wifiManager.reconnect();
-                        Log.e("ConnectWiFi: Connecting", wifiSSID);
+                        Log.e("ConnectWiFi: Connecting", String.valueOf(wifiSSID));
                         return;
                     }
                 }
@@ -763,8 +778,8 @@ public class GuideActivity extends AppCompatActivity implements View.OnClickList
         protected void onPostExecute(String responseMsg) {
             super.onPostExecute(responseMsg);
             String toastMsg;
-            Log.e("Received from ESP", responseMsg);
-            if (!responseMsg.isEmpty()) {
+            Log.e("Received from ESP", String.valueOf(responseMsg));
+            if (responseMsg != null && !responseMsg.isEmpty()) {
                 toastMsg = getString(R.string.notify_config_done);
                 configBtn.setText(getString(R.string.btn_configure));
                 //for test purpose, the following lines are commented

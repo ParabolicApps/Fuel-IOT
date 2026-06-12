@@ -80,7 +80,8 @@ public class ConfigureDeviceActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Wifi SSID the name of the devices
-                String wifiSSID  = ssidSpinner.getSelectedItem().toString();
+                Object selectedSSIDItem = ssidSpinner.getSelectedItem();
+                String wifiSSID = selectedSSIDItem != null ? selectedSSIDItem.toString() : "";
                 String wifiUnmae = deviceUnameEdt.getText().toString();
                 String wifiPSK = wifipskEdt.getText().toString();
                 String deviceTitle = deviceTitleEdt.getText().toString();
@@ -120,7 +121,7 @@ public class ConfigureDeviceActivity extends AppCompatActivity {
             public void onClick(View v) {
                 RefreshAnimation.showRefreshAnimation(refreshSSIDBtn, ConfigureDeviceActivity.this);
                 wifiManager.startScan();
-                registerReceiver(wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+                ContextCompat.registerReceiver(ConfigureDeviceActivity.this, wifiScanReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
             }
         });
 
@@ -167,7 +168,7 @@ public class ConfigureDeviceActivity extends AppCompatActivity {
         List<String> ssidList = new ArrayList<String>();
         // Here, thisActivity is the current activity
         for (ScanResult scanResult : getScanResults(1)) {
-            Log.e("SSID list child", scanResult.SSID);
+            Log.e("SSID list child", String.valueOf(scanResult.SSID));
             ssidList.add(scanResult.SSID);
             //ssidSp.addView(childView);
         }
@@ -219,8 +220,8 @@ public class ConfigureDeviceActivity extends AppCompatActivity {
         protected void onPostExecute(String responseMsg) {
             super.onPostExecute(responseMsg);
             String toastMsg;
-            Log.e("Received from ESP", responseMsg);
-            if (!responseMsg.isEmpty()) {
+            Log.e("Received from ESP", String.valueOf(responseMsg));
+            if (responseMsg != null && !responseMsg.isEmpty()) {
                 title = responseMsg;
                 toastMsg = getString(R.string.notify_config_done);
                 //for test purpose, the following lines are commented

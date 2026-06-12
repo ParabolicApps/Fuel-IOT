@@ -3,6 +3,8 @@ pluginManagement {
         gradlePluginPortal()
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
 dependencyResolutionManagement {
@@ -12,7 +14,9 @@ dependencyResolutionManagement {
         mavenCentral()
         jcenter()
         maven { url 'https://jitpack.io' }
+        maven { url "https://dl.google.com/dl/android/maven2/" }
     }
 }
-rootProject.name = "IOT-Controller"
+rootProject.name = "Fuel-Guard"
 include ':app'
+include ':library'

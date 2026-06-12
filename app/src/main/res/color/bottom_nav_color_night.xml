@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Neon Blue for selected state in Dark Mode -->
+    <item android:color="@color/neon_blue" android:state_checked="true" />
+    <!-- Muted White/Gray for unselected state in Dark Mode -->
+    <item android:color="#80FFFFFF" />
+</selector>

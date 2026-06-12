@@ -1,145 +1,269 @@
-<LinearLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:app="http://schemas.android.com/apk/res-auto"
-	xmlns:tools="http://schemas.android.com/tools"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:background="@color/white"
-	android:orientation="vertical">
-	<ScrollView
-		android:layout_width="match_parent"
-		android:layout_height="match_parent">
-	<LinearLayout
-		android:id="@+id/linear1"
-		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:gravity="center_horizontal|center_vertical"
-		android:orientation="vertical">
-		<LinearLayout
-			android:id="@+id/linear3"
-			android:layout_width="match_parent"
-			android:layout_height="250dp"
-			android:orientation="horizontal">
-			<LinearLayout
-				android:id="@+id/linear4"
-				android:layout_width="match_parent"
-				android:layout_height="match_parent"
-				android:padding="8dp"
-                android:layout_weight="1"
-				android:gravity="center_horizontal|center_vertical"
-				android:orientation="vertical"
-				>
-				<TextView
-                    android:id="@+id/total_consume"
-					android:text="200.0L"
-					android:gravity="center"
-					android:textSize="40sp"
-					android:layout_weight="1"
-					android:textColor="#08BEFF"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"/>
-				<TextView
-					android:id="@+id/textview1"
-					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
-					android:padding="8dp"
-					android:text="Total Consumption (L)"
-					android:textSize="16sp"
-					android:textColor="#000000"
-					android:lines="2"/>
-			</LinearLayout>
-			<LinearLayout
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/appBackgroundColor"
+    android:orientation="vertical"
+    android:padding="16dp">
 
-                android:gravity="center_horizontal|center_vertical"
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-				android:id="@+id/linear5"
-				android:layout_width="match_parent"
-				android:layout_height="match_parent"
-				android:padding="8dp"
-				android:orientation="vertical"
-				android:layout_weight="1">
-				<me.itangqi.waveloadingview.WaveLoadingView
-					android:id="@+id/waveLoadingView"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"
-					android:orientation="horizontal"
-					android:layout_weight="1"
-					app:wlv_borderColor="#2b2b36"
-					app:wlv_borderWidth="10dp"
-					app:wlv_shapeType="circle"
-					app:wlv_titleCenterColor="@android:color/darker_gray"
-					app:wlv_titleCenterSize="28sp"
-					app:wlv_waveAmplitude="70"/>
-				<SeekBar
-					android:id="@+id/seekbar1"
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:padding="8dp"/>
-			</LinearLayout>
-		</LinearLayout>
-		<LinearLayout
-			android:id="@+id/linear6"
-			android:layout_width="match_parent"
-			android:layout_height="250dp"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-			android:orientation="horizontal">
+            <!-- Top Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp">
 
-			<LinearLayout
-				android:id="@+id/linear7"
-				android:layout_width="match_parent"
-				android:layout_height="match_parent"
-				android:layout_weight="1"
-				android:gravity="center_horizontal|center_vertical"
-				android:orientation="vertical"
-				android:padding="8dp">
-
-				<TextView
-                    android:id="@+id/total_input"
-					android:text="200.0L"
-					android:gravity="center"
-					android:textSize="40sp"
-					android:layout_weight="1"
-					android:textColor="#EE9E00"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"/>
+                <ImageView
+                    android:id="@+id/fuel_icon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/ic_home"
+                    app:tint="@color/neon_blue" />
 
                 <TextView
-                    android:id="@+id/textview2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
-                    android:text="Total Input(L)"
-                    android:textColor="#000000"
-                    android:textSize="16sp" />
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="10dp"
+                    android:layout_toEndOf="@id/fuel_icon"
+                    android:text="FUEL GUARD"
+                    android:textColor="?attr/appHeaderTextColor"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
+
+                <ImageView
+                    android:id="@+id/reset_button"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:src="@drawable/baseline_settings_24"
+                    app:tint="?attr/appIconTint" />
+            </RelativeLayout>
+
+            <!-- Car Visualization -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp">
+
+                <FrameLayout
+                    android:id="@+id/logo_container"
+                    android:layout_width="280dp"
+                    android:layout_height="180dp">
+
+                    <ImageView
+                        android:id="@+id/car_logo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.8"
+                        android:src="@drawable/car"
+                        app:tint="@color/neon_blue"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <ImageView
+                        android:id="@+id/nozzle_logo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.0"
+                        android:src="@drawable/ic_fuel_nozzle" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/status_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="?attr/appSubTextColor"
+                    android:textSize="20sp"
+                    android:layout_marginTop="12dp"
+                    android:letterSpacing="0.02"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="4dp"/>
             </LinearLayout>
 
-			<LinearLayout
-				android:id="@+id/linear8"
-				android:layout_width="match_parent"
-				android:layout_height="match_parent"
-				android:padding="8dp"
-				android:gravity="center_horizontal|center_vertical"
-				android:orientation="vertical"
-				android:layout_weight="1">
-				<TextView
-                    android:id="@+id/monthly_usage_total"
-					android:text="200.0L"
-					android:gravity="center"
-					android:textSize="40sp"
-					android:layout_weight="1"
-					android:textColor="#21C68C"
-					android:layout_width="match_parent"
-					android:layout_height="match_parent"/>
-				<TextView
-					android:id="@+id/textview3"
-					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
-					android:padding="8dp"
-					android:text="Monthly Usage (L)"
-					android:textSize="16sp"
-					android:textColor="#000000"/>
-			</LinearLayout>
-		</LinearLayout>
-	</LinearLayout>
-	</ScrollView>
+            <!-- Grid Cards -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <!-- Total Refuelled -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/card_glow_blue"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/refu_00003"
+                        app:tint="@color/neon_blue" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="TOTAL REFUELLED"
+                        android:textColor="?attr/appSubTextColor"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/total_input"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="42.0 Ltrs"
+                        android:textColor="?attr/appContentTextColor"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textview2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Today"
+                        android:textColor="?attr/appSubTextColor"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- Engine Consumed -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/card_glow_orange"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:src="@drawable/cons_00008"
+                        app:tint="@color/neon_orange" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="ENGINE CONSUMED"
+                        android:textColor="?attr/appSubTextColor"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/total_consume"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="42.0 Ltrs"
+                        android:textColor="?attr/appContentTextColor"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/textview1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Today"
+                        android:textColor="?attr/appSubTextColor"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Current Tank Status -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/card_glow_green"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="20dp">
+
+                <RelativeLayout
+                    android:layout_width="80dp"
+                    android:layout_height="80dp">
+                    <me.itangqi.waveloadingview.WaveLoadingView
+                        android:id="@+id/waveLoadingView"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        app:wlv_borderColor="@color/neon_green"
+                        app:wlv_borderWidth="2dp"
+                        app:wlv_shapeType="circle"
+                        app:wlv_waveColor="@color/neon_green"
+                        app:wlv_waveAmplitude="40"
+                        app:wlv_titleCenterSize="20sp"/>
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CURRENT TANK STATUS"
+                        android:textColor="?attr/appSubTextColor"
+                        android:textSize="12sp"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/monthly_usage_total"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="42.0 Ltrs"
+                        android:textColor="@color/neon_green"
+                        android:textSize="36sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"/>
+
+                <SeekBar
+                    android:id="@+id/seekbar1"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textview3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
 </LinearLayout>

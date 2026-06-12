@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="appBackgroundColor" format="color" />
+    <attr name="appCardBackgroundColor" format="color" />
+    <attr name="appHeaderTextColor" format="color" />
+    <attr name="appContentTextColor" format="color" />
+    <attr name="appSubTextColor" format="color" />
+    <attr name="appIconTint" format="color" />
+    <attr name="appDividerColor" format="color" />
+    <attr name="appCardStrokeColor" format="color" />
+    <attr name="bottomNavIconColor" format="reference" />
+</resources>

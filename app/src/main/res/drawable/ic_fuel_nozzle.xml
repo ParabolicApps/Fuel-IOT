@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Simplified Fuel Nozzle placeholder -->
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M70,30 L85,45 L75,55 L60,40 Z" />
+    <path
+        android:fillColor="#424242"
+        android:pathData="M80,50 L95,65 L85,75 L70,60 Z" />
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M30,20 C40,10 60,10 70,20 L60,30 C55,25 45,25 40,30 Z" />
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M20,40 C20,50 10,60 20,70 C30,60 20,50 20,40 Z" />
+</vector>

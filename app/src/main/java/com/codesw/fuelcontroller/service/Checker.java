@@ -7,6 +7,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import androidx.preference.PreferenceManager;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
@@ -17,20 +18,25 @@ import com.codesw.fuelcontroller.utils.SpUtils;
 import com.codesw.fuelcontroller.worker.HttpBackgroundWorker;
 
 /**
- * This is a Simple Class That Can be Used to Get The Response From Device As a Background Service
- * TODO: Add Method For Same Value Response Ignore Function
- *
+ * Checker is a persistent background service responsible for polling the IOT hardware.
+ * It manages a background thread and ensures the application receives real-time 
+ * fuel updates regardless of the UI state.
  */
-
 public class Checker extends Service {
 
     private static final String TAG = "CheckerService";
     public static final String URL_FILTER = "url";
+    
     @Override
     public void onCreate() {
         super.onCreate();
     }
+    
     Thread checkThread;
+    
+    /**
+     * Entry point for the service. Spawns the {@link CheckerThread}.
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG,"service started");
@@ -38,14 +44,17 @@ public class Checker extends Service {
         checkThread.start();
 
         return START_STICKY;
-
     }
 
+    /**
+     * Cleanup and resource release.
+     */
     @Override
     public void onDestroy()
     {
-        checkThread.stop();
-        checkThread.interrupt();
+        if (checkThread != null) {
+            checkThread.interrupt();
+        }
         super.onDestroy();
     }
 
@@ -56,7 +65,9 @@ public class Checker extends Service {
 }
 
 /**
- * Thread Runnable for this Service to Execute in any Situation And Also Wakelock
+ * CheckerThread implements the continuous polling loop.
+ * It utilizes a PowerManager.WakeLock to prevent the CPU from sleeping
+ * during critical synchronization cycles.
  */
 class CheckerThread implements Runnable
 {
@@ -73,6 +84,7 @@ class CheckerThread implements Runnable
     {
         _isRunning=value;
     }
+    
     @SuppressLint("InvalidWakeLockTag")
     public CheckerThread(int serviceId, Context context)
     {
@@ -80,45 +92,54 @@ class CheckerThread implements Runnable
         _context=context;
         sharedpreferences = context.getSharedPreferences("logs", Context.MODE_PRIVATE);
         mPowerManager = (PowerManager) _context.getSystemService(Context.POWER_SERVICE);
+        
+        // Acquiring a screen-dim wakelock to ensure background execution parity
         mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "Service");
         Log.d(TAG,"Thread started");
-
     }
 
     /**
-     * This Method is going to be called from thread run
+     * Triggers an asynchronous HTTP fetch via {@link HttpBackgroundWorker}.
      */
     public void read() {
         HttpBackgroundWorker http=new HttpBackgroundWorker(_context);
         http.execute("");
-
     }
+    
+    /**
+     * Main execution loop. 
+     * Dynamically adjusts polling frequency based on user settings.
+     */
     @Override
     public void run()
     {
-        // 2 sec of interval by default
-        String intervals=sharedpreferences.getString("intervals", "2000");
+        SharedPreferences defaultPrefs = PreferenceManager.getDefaultSharedPreferences(_context);
+        
         synchronized (this) {
             int count = 0;
             while (_isRunning) {
                 try {
-                    //Sample String For Checking if its Running all The time
-                    Log.d(TAG, "hey");
+                    // Fetch the user-defined polling frequency (default 30s)
+                    String frequency = defaultPrefs.getString("sync_frequency", "30");
+                    long intervals = Long.parseLong(frequency) * 1000;
+                    
+                    Log.d(TAG, "Syncing data. Frequency: " + frequency + "s");
                     read();
-                    //Intervals of waiting 3s in millisecond
-                    wait(Integer.parseInt(intervals));
+                    
+                    // Wait for the next sync interval
+                    wait(intervals);
                     count++;
+                    
+                    // Periodically ensure the CPU stays awake for sync processing
                     if(count > 1)
                     {
-                        //int flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON;
-                        //((Activity)_context).getWindow().addFlags(flags);
-
                         mWakeLock.acquire();
                     }
                 } catch (InterruptedException ee) {
                     Log.e(TAG, "run:" + ee.getMessage());
+                    break;
                 } finally {
-                    // Release the WakeLock when it's no longer needed
+                    // Release the WakeLock once the immediate sync task is processed
                     if (mWakeLock.isHeld()) {
                         mWakeLock.release();
                     }
