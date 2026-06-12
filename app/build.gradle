@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
     id 'com.google.gms.google-services'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -27,13 +28,15 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
         
     }
-    configurations {
-        all {
-            exclude group: 'androidx.lifecycle', module: 'lifecycle-runtime-ktx'
-            exclude group: 'androidx.lifecycle', module: 'lifecycle-viewmodel-ktx'
-        }
-    }
 
+}
+
+configurations.all {
+    resolutionStrategy {
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.24'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24'
+    }
 }
 
 dependencies {

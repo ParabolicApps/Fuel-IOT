@@ -90,6 +90,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private SharedPreferences prefs;
 
 	private boolean isRefilling = false;
+	private boolean isShowingSummary = false;
 	private double refillStartValue = 0;
 	private long lastDataTime = 0;
 	private android.os.Handler animationHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -150,12 +151,16 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 
 		statusText.setOnClickListener(v -> {
 			if (!isRefilling) {
+				isShowingSummary = false;
+				animationHandler.removeCallbacksAndMessages("summary_reset");
 				resetStatusText();
 			}
 		});
 
 		resetBtn.setOnClickListener(v -> {
 			if (!isRefilling) {
+				isShowingSummary = false;
+				animationHandler.removeCallbacksAndMessages("summary_reset");
 				resetStatusText();
 			}
 		});
@@ -501,7 +506,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		if (hasSignificantChange) {
 			double deltaForAnimation = Math.abs(inputDelta) >= Math.abs(outputDelta) ? inputDelta : outputDelta;
 			triggerFuelActivity(inputValue, deltaForAnimation);
-		} else if (!isRefilling) {
+		} else if (!isRefilling && !isShowingSummary) {
 			resetStatusText();
 		}
 
@@ -545,6 +550,7 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 	private void finishFuelActivity() {
 		double accumulatedDelta = lastInputValue - refillStartValue;
 		isRefilling = false;
+		isShowingSummary = true;
 		stopNozzleBip();
 		if (statusText != null) {
 			statusText.setText("Activity Complete: " + String.format(Locale.getDefault(), "%.2f", Math.abs(accumulatedDelta)) + "L (Tap to Reset)");
@@ -552,7 +558,12 @@ public class Frag1FragmentActivity extends  Fragment implements UrlBroadcastRece
 		}
 		// Final refresh of totals once the activity ends
 		updateTodayTotals();
-		// Removed scheduleStatusReset() to keep text until manual reset
+		
+		animationHandler.removeCallbacksAndMessages("summary_reset");
+		animationHandler.postAtTime(() -> {
+			isShowingSummary = false;
+			resetStatusText();
+		}, "summary_reset", android.os.SystemClock.uptimeMillis() + 30000);
 	}
 
 	private void updateFuelDisplay(double value) {
