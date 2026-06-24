@@ -1,55 +1,48 @@
 name: Build Android APK
-run-name: ${{ github.event.inputs.repository }} ${{ github.event.inputs.branchName && format('{0}', github.event.inputs.branchName) }} ${{ github.event.inputs.subdir && format('[/{0}]', github.event.inputs.subdir) }} :${{ github.event.inputs.taskName }}
+run-name: Build Current Repo APK via Workflow Dispatch
 
 on:
   workflow_dispatch:
-    inputs:
-      repository:
-        description: "Git repository URL"
-        required: true
-        default: "https://github.com/ParabolicApps/Fuel-IOT"
-      branchName:
-        description: "Git branch name [Optional]"
-        required: false
-        default: ""
-      subdir:
-        description: "Relative subdirectory path when the project is nested [Optional]"
-        required: false
-        default: ""
-      jdkVersion:
-        description: "OpenJDK version: 8, 17, 21, 25, …"
-        required: false
-        default: "17"
-      taskName:
-        description: "build.gradle task name: assembleDebug, assembleRelease, etc."
-        required: false
-        default: "assembleRelease"
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Android SDK is built into this image
+    runs-on: ubuntu-latest
     steps:
+      # 1. Automatically check out the current repository and branch
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Java environment (Using Java 17 as standard default)
       - name: Setup JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: ${{ github.event.inputs.jdkVersion }}
+          java-version: "17"
+          cache: "gradle"
 
-      - name: Clone project
+      # 3. Securely inject the google-services.json into the app folder
+      - name: Decode Google Services JSON
+        env:
+          GOOGLE_SERVICES_SECRET: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          if [[ -z "${{ github.event.inputs.branchName }}" ]]; then
-            git clone --recurse-submodules --depth=1 ${{ github.event.inputs.repository }} workspace
-          else
-            git clone --recurse-submodules --depth=1 --branch ${{ github.event.inputs.branchName }} ${{ github.event.inputs.repository }} workspace
+          if [ -z "$GOOGLE_SERVICES_SECRET" ]; then
+            echo "❌ ERROR: GOOGLE_SERVICES_JSON secret is missing or empty!"
+            exit 1
           fi
+          mkdir -p app
+          echo "$GOOGLE_SERVICES_SECRET" | base64 --decode > app/google-services.json
+          echo "✅ google-services.json safely injected into app/ directory."
 
+      # 4. Build the APK using the repository's native codebase
       - name: Build APK
-        working-directory: ./workspace/${{ github.event.inputs.subdir }}
         run: |
           if [ ! -f "gradlew" ]; then gradle wrapper; fi
           chmod +x gradlew
 
-          if [[ "${{ github.event.inputs.taskName }}" == *Release* ]]; then
+          # Defaulting task to assembleDebug. Change to assembleRelease if you are ready to test production builds.
+          GRADLE_TASK="assembleDebug"
+
+          if [[ "$GRADLE_TASK" == *Release* ]]; then
             echo "Task contains 'Release', attempting to sign a release build with a debug key."
 
             if [ ! -f "$HOME/.android/debug.keystore" ]; then
@@ -61,19 +54,20 @@ jobs:
               mv debug.keystore $HOME/.android/debug.keystore
             fi
 
-            ./gradlew ${{ github.event.inputs.taskName }} \
+            ./gradlew $GRADLE_TASK \
               -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
               -Pandroid.injected.signing.store.password=android \
               -Pandroid.injected.signing.key.alias=androiddebugkey \
               -Pandroid.injected.signing.key.password=android \
               --stacktrace
           else
-            ./gradlew ${{ github.event.inputs.taskName }} --stacktrace
+            ./gradlew $GRADLE_TASK --stacktrace
           fi
 
+      # 5. Save the generated build
       - name: Upload the APK artifact with 1 day retention
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
-          path: workspace/**/*.apk
+          path: app/build/outputs/apk/**/*.apk
           name: apk-archive
           retention-days: 1
